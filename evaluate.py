@@ -11,14 +11,14 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from model import build_model
 from data_generator import generate_sensor_data
 
-MODEL_PATH = "pinn_bridge_model.weights.h5"
+MODEL_PATH = "models/bridge_pinn.keras"
 
 
 class Evaluator:
 
     def __init__(self):
 
-        self.model = build_model()
+        self.model = None
 
         self.x = None
         self.sensor = None
@@ -34,11 +34,11 @@ class Evaluator:
         if not os.path.exists(MODEL_PATH):
 
             raise FileNotFoundError(
-                f"\nModel weights not found:\n{MODEL_PATH}\n"
+                f"\nModel not found:\n{MODEL_PATH}\n"
                 "Run trainer.py first."
             )
 
-        self.model.load_weights(MODEL_PATH)
+        self.model = tf.keras.models.load_model(MODEL_PATH)
 
         print("\nModel Loaded Successfully")
 
@@ -60,6 +60,8 @@ class Evaluator:
             self.x,
             verbose=0
         )
+        if np.max(np.abs(self.prediction)) > 0.1:
+            self.prediction = self.prediction / 1000.0
 
         print("\nPrediction Completed")
 
@@ -90,3 +92,11 @@ class Evaluator:
         print(f"MSE : {mse:.8f}")
         print(f"MAE : {mae:.8f}")
         print(f"R²  : {r2:.4f}")
+
+
+if __name__ == "__main__":
+    evaluator = Evaluator()
+    evaluator.load_model()
+    evaluator.load_test_data()
+    evaluator.predict()
+    evaluator.calculate_metrics()

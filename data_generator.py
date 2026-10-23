@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 
-DATA_PATH = r"C:\Users\tirishaanth\Downloads\archive (5)\bridge_digital_twin_dataset.csv"
+DATA_PATH = r"dataset/bridge_data.csv"
 
 
 
