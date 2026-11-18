@@ -1,128 +1,70 @@
-# Bridge Structural Health Monitoring using Physics-Informed Neural Networks (PINN)
+# PTwin: Backdoors in Inverse-Problem Physics Twins and Certified Detection via Governing-Equation Residuals
 
-Structural Health Monitoring (SHM) framework for bridge infrastructure combining **Physics-Informed Neural Networks (PINNs)** with baseline machine learning models (**Support Vector Machines** and **Random Forests**) evaluated on the **Z24 Benchmark Bridge Dataset**.
-
----
-
-## 📌 Project Overview
-
-Structural Health Monitoring of civil infrastructure requires accurate damage detection, localization, and severity assessment under variable operational and environmental conditions. 
-
-This repository implements:
-- **PINN Architecture**: Enforces Euler-Bernoulli beam differential equations and dynamic boundary conditions directly into the neural network loss function.
-- **Z24 Benchmark Pipeline**: Ingestion and feature extraction across 306 vibration setups (Ambient Vibration Tests and Forced Vibration Tests) spanning 17 progressive damage scenarios.
-- **Comparative Baseline Models**: Support Vector Machines (SVM) and Random Forest (RF) classifiers/regressors for comparative benchmark evaluations.
-- **Automated Visualization**: Scenario dashboards, timeline deflection tracking, modal frequency shifts, and damage index progression plots.
+This repository investigates backdoor vulnerabilities in physics-informed digital twins (PINNs / inverse neural operators) and develops certified detection mechanisms leveraging governing-equation physics residuals.
 
 ---
 
-## 🏗️ Architecture & Methodology
+## 📌 Repository State & Transition
+
+This codebase is currently transitioning from exploratory static beam models to the formal **PTwin** research framework:
+
+1. **`legacy/`**: Contains original exploratory scripts (TensorFlow 2.15 / scikit-learn) for static simply-supported beam models and parsing utilities for the Z24 benchmark dataset.
+2. **`ptwin/`**: The modern PyTorch research framework implementing:
+   - Amortised two-head inverse twins (`u(z | y, e)`, `θ(z | y, e)`).
+   - Physics-informed residual certification (PRC) using governing equation residuals.
+   - Nonparametric derivative estimators (GCV-tuned Sine-Ridge / Tikhonov).
+   - Threat models: Outsourced training (A1), adaptive evasion, data poisoning consistency dichotomy (A2), and gateway substitution (A2′).
+
+Key methodological and architectural specifications are documented in [`DECISIONS.md`](DECISIONS.md).
+
+---
+
+## 🏗️ Core Architecture (PTwin)
 
 ```
-Vibration Data (AVT/FVT) ────────► Feature Extraction (RMS, Modal Frequencies)
-                                         │
-        ┌────────────────────────────────┼────────────────────────────────┐
-        ▼                                ▼                                ▼
-   PINN Model                     Random Forest                          SVM
-(PDE-Constrained)               (Ensemble Baseline)             (Kernel Hyperplane)
-        │                                │                                │
-        └────────────────────────────────┼────────────────────────────────┘
-                                         ▼
-                 Comparative Evaluation & Damage Localization
-```
-
-### Governing Physics
-The PINN incorporates the Euler-Bernoulli beam governing equation:
-
-$$\rho A \frac{\partial^2 w}{\partial t^2} + \frac{\partial^2}{\partial x^2}\left(EI(x) \frac{\partial^2 w}{\partial x^2}\right) = q(x, t)$$
-
-where:
-- $w(x, t)$: Transverse displacement (deflection)
-- $E$: Young's modulus
-- $I(x)$: Moment of inertia (degraded at crack/damage zones)
-- $\rho$: Mass density
-- $A$: Cross-sectional area
-- $q(x, t)$: Dynamic external traffic/excitation force
-
----
-
-## 📊 Experimental Results & Scenarios
-
-Tested across **17 Progressive Damage Scenarios** on the Z24 Bridge:
-
-| Scenario | Description | Files | Modal Freq (Hz) | Avg Damage Index (%) |
-|---|---|---|---|---|
-| **01** | Undamaged Baseline (Reference 1) | 18 | 5.77 | 0.0% |
-| **02** | Pier Settlement - Step 1 (20 mm) | 18 | 5.88 | 58.9% |
-| **03** | Pier Settlement - Step 2 (40 mm) | 18 | 5.65 | 69.2% |
-| **04** | Pier Settlement - Step 3 (80 mm) | 18 | 6.63 | 76.3% |
-| **05** | Pier Settlement - Step 4 (95 mm) | 18 | 6.34 | 83.1% |
-| **06** | Tilt of Pier Foundation | 18 | 5.83 | 98.3% |
-| **07** | Undamaged Condition (Reference 2, Pier Reset) | 18 | 5.98 | 0.0% |
-| **08** | Post-Tensioning Tendon Rupture - Step 1 | 18 | 5.90 | 81.1% |
-| **09** | Post-Tensioning Tendon Rupture - Step 2 | 18 | 4.58 | 91.1% |
-| **10** | Post-Tensioning Tendon Rupture - Step 3 | 18 | 5.98 | 93.5% |
-| **11** | Undamaged Condition (Reference 3) | 18 | 6.24 | 0.0% |
-| **12-15** | Lowering of Pier (-20mm to -95mm) | 72 | 5.73 - 5.92 | 77.9% - 99.0% |
-| **16** | Concrete Spalling & Local Soffit Crack | 18 | 5.79 | 96.9% |
-| **17** | Severe Foundation Settlement / Failure Simulation | 18 | 5.90 | 99.3% |
-
----
-
-## 📁 Repository Structure
-
-```text
-├── beam_pde.py                      # Euler-Bernoulli Beam PDE definitions & residual formulation
-├── config.py                        # Hyperparameters, material constants & geometry config
-├── data_generator.py                # Synthetic & analytical data generation for training
-├── evaluate.py                      # Model evaluation metrics (MSE, MAE, R², Pearson correlation)
-├── evaluate_rf.py                   # Random Forest evaluation module
-├── evaluate_svm.py                  # Support Vector Machine evaluation module
-├── generate_all_file_graphs.py      # Automated generation of sensor response graphs across setups
-├── lbfgs.py                         # Second-order L-BFGS optimizer wrapper for fine-tuning
-├── losses.py                        # Physics residual loss, data loss & boundary condition losses
-├── main.py                          # End-to-end execution pipeline (feature extraction -> train -> eval)
-├── model.py                         # TensorFlow/Keras neural network architectures
-├── plot_z24_dataset_comparison.py   # Benchmark comparison plotting utilities
-├── plot_z24_file_by_file_results.py # File-by-file timeline & scenario distribution plots
-├── process_inputs.py                # Spectral & RMS feature extraction from MAT/AVT/FVT vibration signals
-├── requirements.txt                 # Python dependencies
-├── run_z24_dataset_file_by_file.py  # Benchmark batch evaluation over all 306 files
-├── train.py                         # Synthetic beam training entry point
-├── train_pinn_z24.py                # Z24 PINN training pipeline with physical regularization
-├── train_rf.py                      # Random Forest training script
-├── train_svm.py                     # SVM training script
-├── trainer.py                       # Modular model training orchestrator
-├── visualization.py                 # Multi-panel visualization suite (residuals, deflections, damage index)
-└── results/                         # Evaluation artifacts, dashboards, and comparison charts
+Sensor Readings y ──┐
+                    ▼
+Environmental e  ──► [ Encoder E(y, e) ] ──► Latent h
+                                                  │
+             ┌────────────────────────────────────┴────────────────────────────────────┐
+             ▼                                                                         ▼
+     [ State Head u(z | h) ]                                                [ Diagnosis Head θ(z | h) ]
+     (Fitted to measurements y)                                             (Unsupervised; recovered via PDE)
+             │                                                                         │
+             └────────────────────────────────────┬────────────────────────────────────┘
+                                                  ▼
+                                 Governing Equation Residual Check
+                                 R(z) = θ(z) · u''(z) - M(z)
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quickstart
 
-### 1. Installation
-Clone the repository and install dependencies:
+### Prerequisites
+Install the required dependencies:
 ```bash
-git clone https://github.com/tirishaanthvs85-stack/SHM-BRIDGE.git
-cd SHM-BRIDGE
 pip install -r requirements.txt
 ```
 
-### 2. Run Complete Pipeline
-Execute the full pipeline including feature extraction, training, and comparative evaluation:
+### Running the Verification Suite
+Execute the NumPy/SciPy beam verification suite:
 ```bash
-python main.py
+python -m ptwin.verify_beam
+```
+Or run the full test suite:
+```bash
+pytest
 ```
 
-### 3. Run Benchmark File-by-File Analysis
-To evaluate all vibration setups across the 17 damage scenarios:
+### Training the Amortised Beam Twin
 ```bash
-python run_z24_dataset_file_by_file.py
-python plot_z24_file_by_file_results.py
+# Clean twin (baseline)
+python -m ptwin.twin_beam --mode clean --steps 1500
+
+# A1 backdoor (outsourced loss attack)
+python -m ptwin.twin_beam --mode a1 --steps 1500
+
+# Adaptive evasion attack
+python -m ptwin.twin_beam --mode adaptive --lam_evade 10 --steps 1500
 ```
-
----
-
-## 📜 License & Citation
-Developed for structural health monitoring research and comparative damage detection benchmark studies.

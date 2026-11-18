@@ -20,6 +20,14 @@ data/
 *.tar.gz
 *.7z
 
+# Model weights & checkpoints (untracked junk)
+*.h5
+*.keras
+*.pkl
+models/
+saved_models/
+saved models/
+
 # Environments & IDE
 .vscode/
 .idea/
