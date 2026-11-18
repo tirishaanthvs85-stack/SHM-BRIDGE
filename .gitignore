@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+.venv*/
+venv/
+ENV/
+env/
+
+# Datasets and Large Binary Arrays
+dataset/
+data/
+*.npy
+*.npz
+*.mat
+*.zip
+*.tar.gz
+*.7z
+
+# Environments & IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
