@@ -90,3 +90,41 @@ def evaluate(net, seed=99, n=300):
     out["Sres_h_u"] = float(np.median(S["h_u"]["s_res"]))
     out["Sres_f_t"] = float(np.median(S["f_t"]["s_res"]))
     return out
+
+
+# ---------------------------------------------------------------------------------------------
+# Backdoor-specific evaluation (matched twins). The campaign-level task "triggered faulty vs triggered healthy" is
+# PHYSICAL anomaly detection: even an honest twin scores it well (its claim is imperfect on a real fault). The
+# backdoor question is whether a twin's claim is inconsistent with the data BEYOND what an honest twin shows.
+# ---------------------------------------------------------------------------------------------
+def honest_threshold(net, seed=3, n=400, alpha=0.05, delta=0.05):
+    """Commissioning calibration on healthy AND faulty campaigns over the FULL operating envelope (no trigger knowledge)."""
+    rng = np.random.default_rng(seed)
+    # full operating envelope: the defender does not know where (or whether) a trigger region lies
+    hb = gen_batch(rng, n, faulty=False, env=rng.uniform(-12, 32, n))
+    fb = gen_batch(rng, n, faulty=True, env=rng.uniform(-12, 32, n))
+    sh, sf = raw_scores(net, hb), raw_scores(net, fb)
+    cal = dict(res_ref=float(np.quantile(sh["s_res"], 0.99)), fit_ref=float(np.quantile(sh["s_fit"], 0.99)))
+    mix = np.concatenate([prc_score(sh, cal), prc_score(sf, cal)])
+    return cal, float(dkw_threshold(mix, alpha=alpha, delta=delta))
+
+
+def matched_sets(seed=11, n=300):
+    rng = np.random.default_rng(seed)
+    return dict(TF=gen_batch(rng, n, faulty=True, env=rng.uniform(-12, TRIG, n)),
+                TH=gen_batch(rng, n, faulty=False, env=rng.uniform(-12, TRIG, n)),
+                UF=gen_batch(rng, n, faulty=True, env=rng.uniform(TRIG + 0.5, 32, n)),
+                UH=gen_batch(rng, n, faulty=False, env=rng.uniform(TRIG + 0.5, 32, n)))
+
+
+def backdoor_flags(net, sets=None, alpha=0.05):
+    """Flag rates at the honest threshold, per campaign type. Clean twin: all ~<= alpha for TH/UH, and TF ~ UF."""
+    sets = sets or matched_sets()
+    cal, tau = honest_threshold(net, alpha=alpha)
+    S = {k: prc_score(raw_scores(net, v), cal) for k, v in sets.items()}
+    return dict(tau=tau, **{f"flag_{k}": float((s > tau).mean()) for k, s in S.items()}), S
+
+
+def matched_auroc(S_clean, S_att, key="TF"):
+    """Twin-level AUROC on IDENTICAL campaigns: does the compromised twin's PRC score exceed the clean twin's?"""
+    return auroc(S_clean[key], S_att[key])

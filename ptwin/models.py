@@ -89,15 +89,21 @@ def sine_ridge_operator(K=40, lam=3e-8, order=3):
 class Twin(nn.Module):
     """skeleton=True feeds the heads the curvature residual of the sine-ridge reconstruction of the readings
     (a physics-informed input feature, linear in y, no labels); skeleton=False is the plain MLP twin."""
-    def __init__(self, width=128, depth=3, hdim=64, fourier=True, seed=0, skeleton=False, K=40):
+    def __init__(self, width=128, depth=3, hdim=64, fourier=True, seed=0, skeleton=False, K=40, head="general"):
         super().__init__()
-        self.fourier, self.skeleton = fourier, skeleton
+        self.fourier, self.skeleton, self.head = fourier, skeleton, head
         self.ff = Fourier(seed=seed) if fourier else None
         zdim = (96 if fourier else 1) + (1 if skeleton else 0)
         self.enc = mlp(25, hdim, 128, 2)
         self.u = mlp(zdim + hdim, 1, width, depth)
-        self.th = mlp(zdim + hdim, 1, width, depth)
-        nn.init.constant_(self.th[-1].bias, -4.0)     # start near "no damage"
+        if head == "general":
+            self.th = mlp(zdim + hdim, 1, width, depth)
+            nn.init.constant_(self.th[-1].bias, -4.0)     # start near "no damage"
+        else:                                             # structured head: one localised stiffness-loss bump
+            self.pnet = mlp(hdim + 64, 3, 128, 2)
+            with torch.no_grad():
+                self.pnet[-1].bias.copy_(torch.tensor([-5.0, 0.0, 0.0]))
+            self.register_buffer("zg", torch.linspace(0.02, 0.98, 64)[None, :, None])
         self.register_buffer("zs", torch.tensor(B.XS, dtype=torch.float32)[None, :, None])
         A, w = sine_ridge_operator(K)
         self.register_buffer("A", torch.tensor(A, dtype=torch.float32))
@@ -129,7 +135,14 @@ class Twin(nn.Module):
             base = u_sk
         f = torch.cat(parts, -1)
         u = base + z * (1 - z) * self.u(f) * WS      # hard BCs w(0)=w(1)=0
-        dev = DEV_MAX * torch.sigmoid(self.th(f))
+        if self.head == "general":
+            dev = DEV_MAX * torch.sigmoid(self.th(f))
+        else:
+            _, c_g = self.skel(self.zg.expand(y.shape[0], -1, -1), y)
+            Rg = (d0 * c_g - self.zg * (1 - self.zg) / 2) / M_PEAK
+            p = self.pnet(torch.cat([h[:, 0], torch.asinh(Rg[..., 0] / 0.01) / 3], -1))
+            sev, x0, w = DEV_MAX * torch.sigmoid(p[:, 0]), 0.1 + 0.8 * torch.sigmoid(p[:, 1]), 0.02 + 0.08 * torch.sigmoid(p[:, 2])
+            dev = sev[:, None, None] * torch.exp(-(z - x0[:, None, None]) ** 2 / (2 * w[:, None, None] ** 2))
         return u, dev
 
 
@@ -144,3 +157,13 @@ def to_t(b, keys=("y", "e")):
         a = torch.tensor(b[k], dtype=torch.float32)
         out.append(a if a.ndim > 1 else a[:, None])
     return out
+
+
+def load_twin(path, arch=None):
+    """Load a checkpoint saved either as a bare state_dict (legacy runs: skeleton twin) or {'arch', 'state'}."""
+    obj = torch.load(path)
+    if isinstance(obj, dict) and "state" in obj:
+        net = Twin(**obj["arch"]); net.load_state_dict(obj["state"])
+    else:
+        net = Twin(**(arch or {"skeleton": True})); net.load_state_dict(obj)
+    return net.eval()

@@ -1,0 +1,68 @@
+{
+ "pack": [
+  {
+   "cell_var": 0.0,
+   "auroc": 1.0,
+   "healthy_floor": 0.05933886430668105,
+   "tpr1": 1.0
+  },
+  {
+   "cell_var": 0.02,
+   "auroc": 1.0,
+   "healthy_floor": 0.0657734461287144,
+   "tpr1": 1.0
+  },
+  {
+   "cell_var": 0.05,
+   "auroc": 1.0,
+   "healthy_floor": 0.09031842210901035,
+   "tpr1": 1.0
+  },
+  {
+   "cell_var": 0.1,
+   "auroc": 0.99609375,
+   "healthy_floor": 0.13842469578500127,
+   "tpr1": 0.9375
+  },
+  {
+   "cell_var": 0.2,
+   "auroc": 0.96546875,
+   "healthy_floor": 0.21603178634041426,
+   "tpr1": 0.55
+  }
+ ],
+ "noise": [
+  {
+   "noise_rel": 0.0003,
+   "auroc": 1.0,
+   "healthy_floor": 0.004519022844270328,
+   "kappa_times_sigma": 0.002058405734526955
+  },
+  {
+   "noise_rel": 0.001,
+   "auroc": 0.9871875,
+   "healthy_floor": 0.007640923042631247,
+   "kappa_times_sigma": 0.0068613524484243535
+  },
+  {
+   "noise_rel": 0.003,
+   "auroc": 0.7465625,
+   "healthy_floor": 0.018774552530150257,
+   "kappa_times_sigma": 0.020584057345272397
+  },
+  {
+   "noise_rel": 0.01,
+   "auroc": 0.59859375,
+   "healthy_floor": 0.06070291681055323,
+   "kappa_times_sigma": 0.06861352448424014
+  },
+  {
+   "noise_rel": 0.03,
+   "auroc": 0.52421875,
+   "healthy_floor": 0.18374974404997912,
+   "kappa_times_sigma": 0.20584057345272155
+  }
+ ],
+ "corr_pack": -0.9223815082217023,
+ "corr_noise": -0.8161381606264039
+}

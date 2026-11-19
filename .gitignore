@@ -37,3 +37,6 @@ Thumbs.db
 # PTwin training artifacts (regenerable)
 results/ckpt/
 results/logs/
+results/p2/
+results/z24pdf/
+results/matrix_v1_backup.jsonl

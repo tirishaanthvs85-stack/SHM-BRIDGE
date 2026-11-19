@@ -13,9 +13,11 @@ TS = np.linspace(0, 1, 26)[1:-1]
 K, G, S0, THETA, G_GROW, Q_RUN, T_TRIG, SIGMA_T = 3.0, 20.0, 1.0, 15.0, 8.0, 40.0, 35.0, 0.05
 
 
-def gen(T, t, env):
+def gen(T, t, env, true=False):
+    """Nominal generation. With true=True the cell's own (varied) G is used: the defender never sees it."""
     I = 1 + env["a"] * np.sin(2 * np.pi * env["f"] * t + env["phi"])
-    return G * 0.5 * I ** 2 + S0 * np.exp(np.clip((T - 25.0) / THETA, -20, 20))
+    g = G * (env.get("gg", 1.0) if true else 1.0)
+    return g * 0.5 * I ** 2 + S0 * np.exp(np.clip((T - 25.0) / THETA, -20, 20))
 
 
 class BatteryDomain(PhysicsTwinProblem):
@@ -25,11 +27,15 @@ class BatteryDomain(PhysicsTwinProblem):
     sev_grid = (0.25, 0.5, 1.0, 2.0, 4.0)
     sev_action = 1.0
     lam_default = 1e-6
+    cell_var = 0.0                  # multi-cell pack: relative cell-to-cell spread of cooling k and generation G (unknown to defender)
 
     def sample_env(self, rng, triggered=False):
         Ta = rng.uniform(T_TRIG, 45) if triggered else rng.uniform(0, 45)
-        return dict(Tamb=float(Ta), a=float(rng.uniform(0.2, 0.6)), f=float(rng.uniform(0.5, 2)),
-                    phi=float(rng.uniform(0, 2 * np.pi)))
+        env = dict(Tamb=float(Ta), a=float(rng.uniform(0.2, 0.6)), f=float(rng.uniform(0.5, 2)),
+                   phi=float(rng.uniform(0, 2 * np.pi)))
+        if self.cell_var > 0:
+            env["kk"] = float(1 + self.cell_var * rng.normal()); env["gg"] = float(1 + self.cell_var * rng.normal())
+        return env
 
     def sample_env_audit(self, rng):
         return self.sample_env(rng)
@@ -49,7 +55,7 @@ class BatteryDomain(PhysicsTwinProblem):
             for s in range(sub):
                 t = TF[i] + (s + 0.5) * h
                 q = qf[i] + (qf[i + 1] - qf[i]) * (s + 0.5) / sub
-                Ti = Ti + h * (gen(Ti, t, env) + q - K * (Ti - env["Tamb"]))
+                Ti = Ti + h * (gen(Ti, t, env, true=True) + q - K * env.get("kk", 1.0) * (Ti - env["Tamb"]))
             T[i + 1] = Ti
         return T
 

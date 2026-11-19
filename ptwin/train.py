@@ -108,12 +108,12 @@ if __name__ == "__main__":
     cfg = {**json.loads(a.cfg), "lam_evade": a.lam_evade}
     init = None
     if a.init:
-        init = Twin(seed=a.seed, **cfg.get("arch", {}))
-        init.load_state_dict(torch.load(a.init))
+        from ptwin.models import load_twin
+        init = load_twin(a.init, cfg.get("arch"))
     bf = a2_batch if a.mode == "a2" else None
     net = train(a.mode, a.steps, a.seed, cfg, net=init, batch_fn=bf, threads=a.threads)
     net.eval()
     if a.out:
         os.makedirs(os.path.dirname(a.out), exist_ok=True)
-        torch.save(net.state_dict(), a.out)
+        torch.save(dict(arch=cfg.get("arch", {}), state=net.state_dict()), a.out)
     print(json.dumps({k: round(v, 3) for k, v in evaluate(net).items()}))

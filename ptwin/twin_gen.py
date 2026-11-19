@@ -301,6 +301,38 @@ def evaluate(net, seed=99, n=300):
 T_LO = Bt.T_TRIG - 0.5
 
 
+def matched_eval(net, clean=None, seed=11, n=300, alpha=0.05, delta=0.05):
+    """Backdoor-specific evaluation (see ptwin.defend): honest threshold from untriggered healthy+faulty commissioning,
+    flag rates on TF/TH/UF/UH, and twin-level AUROC against the clean twin on identical campaigns."""
+    from ptwin.core import dkw_threshold
+    rng = np.random.default_rng(seed)
+    gen = gen_pipe if net.domain == "pipeline" else gen_batt
+    envU = lambda m: rng.uniform(0.45, 1.3, m) if net.domain == "pipeline" else rng.uniform(0, T_LO, m)
+    envT = lambda m: rng.uniform(0.3, P.TRIG, m) if net.domain == "pipeline" else rng.uniform(Bt.T_TRIG, 45, m)
+    sets = dict(TF=gen(rng, n, faulty=True, env=envT(n)), TH=gen(rng, n, faulty=False, env=envT(n)),
+                UF=gen(rng, n, faulty=True, env=envU(n)), UH=gen(rng, n, faulty=False, env=envU(n)))
+    com = np.random.default_rng(seed + 100)
+    cu = lambda m: com.uniform(0.3, 1.3, m) if net.domain == "pipeline" else com.uniform(0, 45, m)   # full envelope
+    ch, cf = gen(com, 400, faulty=False, env=cu(400)), gen(com, 400, faulty=True, env=cu(400))
+
+    def prc_scores(m_, bset, ref):
+        s_ = consistent_scores(m_, bset)
+        return np.maximum(s_["s_res"] / ref[0], s_["s_fit"] / ref[1])
+    def make(m_):
+        sh = consistent_scores(m_, ch)
+        ref = (np.quantile(sh["s_res"], 0.99), np.quantile(sh["s_fit"], 0.99))
+        mix = np.concatenate([prc_scores(m_, ch, ref), prc_scores(m_, cf, ref)])
+        return ref, float(dkw_threshold(mix, alpha=alpha, delta=delta))
+    ref, tau = make(net)
+    S = {k: prc_scores(net, v, ref) for k, v in sets.items()}
+    out = dict(flags=dict(tau=tau, **{f"flag_{k}": float((v > tau).mean()) for k, v in S.items()}))
+    if clean is not None:
+        rc, _ = make(clean)
+        Sc = {k: prc_scores(clean, v, rc) for k, v in sets.items()}
+        out["matched_auroc"] = {k: float(auroc(Sc[k], S[k])) for k in S}
+    return out
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--domain", default="pipeline"); ap.add_argument("--mode", default="clean")

@@ -78,3 +78,22 @@ def run_baselines(net, auroc, n=300, seed=7):
     out["B4_global_sweep"] = auroc(b4_global_sweep(net, h), b4_global_sweep(net, f))
     out["B6_actclust"] = auroc(b6_activation_clustering(net, h, ref), b6_activation_clustering(net, f, ref))
     return out
+
+
+def matched_baselines(net_att, net_clean, n=300, seed=7):
+    """Twin-level backdoor detection on IDENTICAL triggered-faulty campaigns: AUROC of each detector's score for the
+    compromised twin against the clean twin (two-sided: max(a, 1-a), since a baseline's sign is not known a priori)."""
+    rng = np.random.default_rng(seed)
+    f = gen_batch(rng, n, faulty=True, env=rng.uniform(-12, -2, n))
+    ref = gen_batch(rng, 400, faulty=False)
+    out = {}
+    two = lambda a: float(max(a, 1 - a))
+    from ptwin.core import auroc
+    cal_c, cal_a = calibrate(net_clean, np.random.default_rng(seed + 1)), calibrate(net_att, np.random.default_rng(seed + 1))
+    out["PRC"] = two(auroc(prc_score(raw_scores(net_clean, f), cal_c), prc_score(raw_scores(net_att, f), cal_a)))
+    out["B1_loss"] = two(auroc(b1_loss(net_clean, f), b1_loss(net_att, f)))
+    out["B2_spectral"] = two(auroc(b2_spectral_signature(net_clean, f, ref), b2_spectral_signature(net_att, f, ref)))
+    out["B3_strip"] = two(auroc(b3_strip(net_clean, f, np.random.default_rng(1)), b3_strip(net_att, f, np.random.default_rng(1))))
+    out["B4_global_sweep"] = two(auroc(b4_global_sweep(net_clean, f), b4_global_sweep(net_att, f)))   # data-only: identical for both twins
+    out["B6_actclust"] = two(auroc(b6_activation_clustering(net_clean, f, ref), b6_activation_clustering(net_att, f, ref)))
+    return out

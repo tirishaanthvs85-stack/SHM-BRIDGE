@@ -37,3 +37,8 @@ L.append(f"\nnoise-only floor (within-scenario std of f1, relative): {within:.4f
          f"calibrated threshold {tau:.4f} is {tau/(2*within):.1f}x that floor (healthy-state spread across scenarios dominates; temperature is not controlled).")
 open("results/z24_prc.md", "w").write("\n".join(L) + "\n")
 print("\n".join(L))
+
+ci_lo, ci_hi = bootstrap_ci(auroc, s_held, s_dam, 1000)
+json.dump(dict(pooled_auroc=float(auroc(s_held, s_dam)), ci_lo=ci_lo, ci_hi=ci_hi, tau=float(tau), n_cal=len(cal), n_held=len(held),
+               n_damage=len(dam), fpr=float((s_held > tau).mean()), tpr=float((s_dam > tau).mean()), noise_floor_ratio=float(tau / (2 * within))),
+          open("results/z24_prc.json", "w"))
