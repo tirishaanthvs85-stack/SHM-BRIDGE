@@ -42,3 +42,18 @@ This document records the foundational architecture and methodological decisions
 ## 4. Framework Standardization
 - **Core Package**: PyTorch ($\ge 2.2$) for all `ptwin/` development, enabling nested autograd for higher-order derivatives and seamless integration with security benchmarks.
 - **Legacy Preservation**: Legacy TensorFlow 2.15 scripts are quarantined in `legacy/` as reference implementations and for the Z24 `.mat` data discovery logic.
+
+---
+
+## 5. Implementation decisions made while running the phases (2026-11-19)
+- **Physics input feature ("skeleton").** The plain MLP twin does not converge on CPU (faulty S_fit ~49 after 8k steps). The sine-ridge
+  curvature residual of the readings (linear in `y`, no labels) is fed to both heads; this is what makes the clean twin converge.
+- **Smoothing-consistent PRC residual.** The residual compares readings with the forward solution of the *claimed* stiffness, differentiated with
+  the same estimator as the readings. An oracle twin claiming the true stiffness then scores AUROC ~0.48; the raw `D*c_hat - M` residual cannot
+  (the smoothing bias alone separates faulty from healthy).
+- **Theorem 1 certificate.** `S_res >= S_nf(sev, env) - eps_noise`: `S_nf` is the estimator's score on noise-free readings, minimised over a
+  fault-location library; `eps_noise` is the Hsu high-probability bound from sigma and the estimator. This replaces the triangle-inequality bias term.
+- **Adaptive attacker.** It knows the defender's functional and penalises `S_res^2` computed from the readings' curvature and the claim; a
+  penalty on the twin's own `u''` would not change what the defender sees.
+- **Unmet Phase-2 criteria.** Peak-severity MAE <= 0.05 sits near the noise limit (an analytic estimator reaches 0.046 only with 0.10 localisation
+  error), and the clean-arm PRC AUROC stays well above 0.6 because the twin under-reports peak severity. Both are reported as failures.

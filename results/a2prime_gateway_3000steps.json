@@ -1,0 +1,32 @@
+[
+ {
+  "asset": 0,
+  "ASR": 0.0,
+  "mean_true_sev_window": 0.40317941166154697,
+  "MAE_outside": 0.20344491259417824,
+  "AUROC_audit_raw": 1.0,
+  "TPR1_audit": 1.0,
+  "median_Sres_faulty": 0.07753153395753551,
+  "median_Sres_healthy": 0.010519107819484456
+ },
+ {
+  "asset": 1,
+  "ASR": 0.0,
+  "mean_true_sev_window": 0.40102946474216516,
+  "MAE_outside": 0.16194773228641676,
+  "AUROC_audit_raw": 1.0,
+  "TPR1_audit": 1.0,
+  "median_Sres_faulty": 0.08058297959588603,
+  "median_Sres_healthy": 0.010585853787955036
+ },
+ {
+  "asset": 2,
+  "ASR": 0.0,
+  "mean_true_sev_window": 0.4014492466030092,
+  "MAE_outside": 0.07244517361191417,
+  "AUROC_audit_raw": 1.0,
+  "TPR1_audit": 1.0,
+  "median_Sres_faulty": 0.05446013273982523,
+  "median_Sres_healthy": 0.008741661953568639
+ }
+]

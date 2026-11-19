@@ -1,0 +1,11 @@
+clean 1 0 {} clean_s1
+clean 2 0 {} clean_s2
+a1 1 0 {} a1_s1
+a1 2 0 {} a1_s2
+adaptive 0 0.1 {} adaptive_l0.1_s0
+adaptive 0 1 {} adaptive_l1_s0
+adaptive 0 10 {} adaptive_l10_s0
+adaptive 0 100 {} adaptive_l100_s0
+a2 0 0 {"alpha":0.0,"p":0.05} a2_a0_s0
+a2 0 0 {"alpha":0.5,"p":0.05} a2_a0.5_s0
+a2 0 0 {"alpha":1.0,"p":0.05} a2_a1_s0

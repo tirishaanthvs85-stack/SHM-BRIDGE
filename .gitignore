@@ -33,3 +33,7 @@ saved models/
 .idea/
 .DS_Store
 Thumbs.db
+
+# PTwin training artifacts (regenerable)
+results/ckpt/
+results/logs/
