@@ -1,7 +1,0 @@
-v2_adaptive_l0.1_s3
-v2_adaptive_l0.1_s4
-v2_adaptive_l100_s3
-v2_adaptive_l100_s4
-v2_a2_a0_p25_s2
-v2_a2_a0.5_p25_s2
-v2_a2_a1_p25_s2

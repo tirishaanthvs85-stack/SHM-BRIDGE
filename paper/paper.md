@@ -4,7 +4,7 @@
 
 ## Abstract
 
-Physics twins that *infer* a hidden physical coefficient (stiffness of a beam, leak flow of a pipeline, internal heat source of a battery) from sparse sensor readings are being trained, fine-tuned and hosted by third parties. We show that such an **inverse twin** can be backdoored: under a rare trigger (a cold snap, a night-minimum flow, a hot ambient) it reports "healthy" for a genuinely faulty asset while behaving normally otherwise. We propose **physics-residual certification (PRC)**: a detector that never inspects the twin's weights but checks its *claim* against the readings through the governing equation, using a smoothing-consistent residual and a finite-sample threshold. On a 1-D beam the outsourced-training backdoor (A1) reaches an attack success rate of 0.99 and is flagged on 0.03 of triggered faulty campaigns, while the matched clean twin is flagged on 0.01 of the same campaigns and the backdoor is *not* flagged on triggered healthy (0.00) or untriggered faulty (0.00) campaigns, so the detector separates a **backdoor** from a **genuine fault**. An attacker who knows the defender's functional can reduce detection only by reporting the fault: across the adaptive sweep the attack success rate falls from 0.99 (no evasion) to 0.10 (strongest evasion weight tested) while the flag rate remains 0.03. A data-poisoning attack (A2) either has no effect or is PDE-inconsistent and screened (a consistency dichotomy, Proposition 3). We also report where the approach is weak: the clean twin does not meet all fidelity targets of our protocol (§6.1), real-data detection on Z24 is modest (pooled AUROC 0.66), and the certified detection radius is 2.5-2.0x looser than empirical radii.
+Physics twins that *infer* a hidden physical coefficient (stiffness of a beam, leak flow of a pipeline, internal heat source of a battery) from sparse sensor readings are being trained, fine-tuned and hosted by third parties. We show that such an **inverse twin** can be backdoored: under a rare trigger (a cold snap, a night-minimum flow, a hot ambient) it reports "healthy" for a genuinely faulty asset while behaving normally otherwise. We propose **physics-residual certification (PRC)**: a detector that never inspects the twin's weights but checks its *claim* against the readings through the governing equation, using a smoothing-consistent residual and a finite-sample threshold. On a 1-D beam the outsourced-training backdoor (A1) reaches an attack success rate of 0.99 and is flagged on 0.03 of triggered faulty campaigns, while the matched clean twin is flagged on 0.01 of the same campaigns and the backdoor is *not* flagged on triggered healthy (0.00) or untriggered faulty (0.00) campaigns, so the detector separates a **backdoor** from a **genuine fault**. An attacker who knows the defender's functional can reduce detection only by reporting the fault: across the adaptive sweep the attack success rate falls from 0.99 (no evasion) to 0.10 (strongest evasion weight tested) while the flag rate remains 0.02. A data-poisoning attack (A2) either has no effect or is PDE-inconsistent and screened (a consistency dichotomy, Proposition 3). We also report where the approach is weak: the clean twin does not meet all fidelity targets of our protocol (§6.1), real-data detection on Z24 is modest (pooled AUROC 0.66), and the certified detection radius is 2.5-2.0x looser than empirical radii.
 
 ## 1. Introduction
 
@@ -75,7 +75,7 @@ Domains and parameters are in `ptwin/domains/*.py` and `ptwin/models.py` / `ptwi
 | clean-arm PRC AUROC (faulty vs healthy) | 0.4-0.6 | 0.781 ± 0.155 | 0/5 | FAIL |
 | all criteria on all seeds | yes | - | - | FAIL |
 
-The plain MLP twin does not converge on CPU (faulty S_fit ≈ 49 after 8000 steps at fit weight 1). A sine-ridge curvature residual of the readings (linear in y, label-free) fed to both heads makes it converge, and raising the data-fit weight from 1 to 60 cuts the peak-severity MAE from about 0.095 to 0.043 (median over 5 seeds; mean 0.098, max 0.317, 4/5 seeds meet 0.05; ramp restart of the plateaued seed: 0.044). A supervised oracle on the same readings reaches 0.014, so the target is attainable (an earlier draft of our notes called it noise-limited; that was wrong). The remaining failing criteria are peak-severity MAE (met on only 4/5 seeds) and clean-arm PRC AUROC (0.78, target 0.4-0.6); these are reported as failures, not worked around (§9).
+The plain MLP twin does not converge on CPU (faulty S_fit ≈ 49 after 8000 steps at fit weight 1). A sine-ridge curvature residual of the readings (linear in y, label-free) fed to both heads makes it converge, and raising the data-fit weight from 1 to 60 cuts the peak-severity MAE from about 0.095 to 0.043 (median over 5 seeds; mean 0.098, max 0.317, 4/5 seeds meet 0.05; ramp restart of the plateaued seed: 0.044). A supervised oracle on the same readings reaches 0.014, so the target is attainable (an earlier draft of our notes called it noise-limited; that was wrong). The remaining failing criteria are peak-severity MAE (met on only 4/5 seeds) and clean-arm PRC AUROC (0.78, target 0.4-0.6); these are reported as failures, not worked around (§9). A post-hoc replication ("v3": 30,000 steps, fit-weight ramp on every seed, 5 seeds, trained on a Kaggle T4 after seeing the v2 results, so not pre-registered) gives clean-arm PRC AUROC 0.51 (per seed 0.53, 0.54, 0.46, 0.48, 0.54; target 0.4-0.6, met on 5/5) and median peak-severity MAE 0.041 (3/5 seeds <= 0.05). The full Phase-2 gate still fails on v3: healthy S_fit is 3.11, below the 3.9 lower bound (the twin fits the readings below the expected noise level, which suggests it partly fits noise; not tested further), and the location criterion is met on 1/5 seeds. The v2 numbers remain the headline; v3 is reported alongside, not substituted.
 
 ### 6.2 Backdoor-specific detection
 Threshold = DKW (alpha=5%, delta=5%) quantile of the PRC score on commissioning campaigns that include genuine faults (untriggered healthy+faulty). 'flag' = fraction of campaigns of that type flagged. TF/TH = triggered faulty/healthy, UF/UH = untriggered faulty/healthy. A clean twin must flag ~nothing, including TF (a genuine fault is not a backdoor); a backdoor must flag TF but not TH/UF/UH. matched AUROC = compromised-twin PRC score vs clean-twin score on identical TF campaigns.
@@ -85,13 +85,13 @@ Threshold = DKW (alpha=5%, delta=5%) quantile of the PRC score on commissioning 
 | clean | 5 | 0.205 ± 0.552 | 0.011 ± 0.009 | 0.000 ± 0.000 | 0.014 ± 0.005 | 0.000 ± 0.000 | - | - | 0.752 ± 0.168 |
 | a1 | 5 | 0.991 ± 0.008 | 0.029 ± 0.013 | 0.000 ± 0.000 | 0.003 ± 0.009 | 0.000 ± 0.000 | 0.989 ± 0.027 | 0.481 ± 0.385 | 1.000 ± 0.000 |
 | a3 | 5 | 0.793 ± 0.129 | 0.028 ± 0.004 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.991 ± 0.024 | 0.391 ± 0.248 | 1.000 ± 0.000 |
-| adaptive_l0.1 | 3 | 0.983 ± 0.036 | 0.026 ± 0.034 | 0.000 ± 0.000 | 0.006 ± 0.024 | 0.000 ± 0.000 | 0.983 ± 0.057 | 0.484 ± 1.105 | 1.000 ± 0.000 |
+| adaptive_l0.1 | 5 | 0.983 ± 0.013 | 0.029 ± 0.014 | 0.000 ± 0.000 | 0.003 ± 0.009 | 0.000 ± 0.000 | 0.990 ± 0.023 | 0.479 ± 0.391 | 1.000 ± 0.000 |
 | adaptive_l1 | 5 | 0.356 ± 0.007 | 0.001 ± 0.002 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.912 ± 0.200 | 0.385 ± 0.249 | 1.000 ± 0.000 |
 | adaptive_l10 | 5 | 0.134 ± 0.003 | 0.030 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.720 ± 0.324 | 0.379 ± 0.246 | 0.940 ± 0.009 |
-| adaptive_l100 | 3 | 0.103 ± 0.000 | 0.030 ± 0.000 | 0.000 ± 0.000 | 0.001 ± 0.005 | 0.000 ± 0.000 | 0.617 ± 0.740 | 0.320 ± 0.631 | 0.932 ± 0.023 |
-| a2_a0.5_p25 | 2 | 0.023 ± 0.085 | 0.017 ± 0.000 | 0.000 ± 0.000 | 0.017 ± 0.042 | 0.000 ± 0.000 | 0.322 ± 2.945 | 0.271 ± 2.952 | 0.808 ± 0.316 |
-| a2_a0_p25 | 2 | 0.012 ± 0.021 | 0.017 ± 0.000 | 0.000 ± 0.000 | 0.007 ± 0.042 | 0.000 ± 0.000 | 0.346 ± 2.679 | 0.273 ± 2.989 | 0.821 ± 0.056 |
-| a2_a1_p25 | 2 | 0.003 ± 0.000 | 0.017 ± 0.085 | 0.000 ± 0.000 | 0.027 ± 0.000 | 0.000 ± 0.000 | 0.322 ± 2.699 | 0.279 ± 3.101 | 0.817 ± 0.132 |
+| adaptive_l100 | 5 | 0.103 ± 0.000 | 0.024 ± 0.017 | 0.000 ± 0.000 | 0.003 ± 0.007 | 0.000 ± 0.000 | 0.704 ± 0.303 | 0.380 ± 0.245 | 0.932 ± 0.011 |
+| a2_a0.5_p25 | 3 | 0.022 ± 0.017 | 0.020 ± 0.014 | 0.000 ± 0.000 | 0.013 ± 0.017 | 0.000 ± 0.000 | 0.421 ± 0.717 | 0.348 ± 0.666 | 0.792 ± 0.092 |
+| a2_a0_p25 | 3 | 0.013 ± 0.008 | 0.016 ± 0.005 | 0.000 ± 0.000 | 0.006 ± 0.010 | 0.000 ± 0.000 | 0.490 ± 0.813 | 0.353 ± 0.679 | 0.839 ± 0.077 |
+| a2_a1_p25 | 3 | 0.004 ± 0.005 | 0.013 ± 0.022 | 0.000 ± 0.000 | 0.024 ± 0.010 | 0.000 ± 0.000 | 0.446 ± 0.750 | 0.352 ± 0.684 | 0.818 ± 0.026 |
 
 ### Baselines, matched twin-level AUROC on identical triggered-faulty campaigns (v2; two-sided max(a, 1-a))
 
@@ -99,13 +99,13 @@ Threshold = DKW (alpha=5%, delta=5%) quantile of the PRC score on commissioning 
 |---|---|---|---|---|---|---|---|
 | a1 | 5 | 0.991 ± 0.019 | 0.696 ± 0.223 | 0.951 ± 0.065 | 0.971 ± 0.061 | 0.500 ± 0.000 | 0.998 ± 0.005 |
 | a3 | 5 | 0.992 ± 0.022 | 0.556 ± 0.028 | 0.879 ± 0.052 | 0.796 ± 0.144 | 0.500 ± 0.000 | 0.766 ± 0.223 |
-| adaptive_l0.1 | 3 | 0.984 ± 0.045 | 0.785 ± 0.306 | 0.980 ± 0.079 | 0.998 ± 0.009 | 0.500 ± 0.000 | 1.000 ± 0.000 |
+| adaptive_l0.1 | 5 | 0.990 ± 0.019 | 0.681 ± 0.208 | 0.968 ± 0.051 | 0.997 ± 0.004 | 0.500 ± 0.000 | 0.997 ± 0.008 |
 | adaptive_l1 | 5 | 0.933 ± 0.158 | 0.644 ± 0.232 | 0.900 ± 0.178 | 0.998 ± 0.002 | 0.500 ± 0.000 | 0.943 ± 0.099 |
 | adaptive_l10 | 5 | 0.824 ± 0.104 | 0.652 ± 0.218 | 0.857 ± 0.223 | 0.998 ± 0.001 | 0.500 ± 0.000 | 0.927 ± 0.135 |
-| adaptive_l100 | 3 | 0.762 ± 0.168 | 0.747 ± 0.500 | 0.911 ± 0.383 | 0.996 ± 0.011 | 0.500 ± 0.000 | 0.970 ± 0.129 |
-| a2_a0.5_p25 | 2 | 0.724 ± 2.027 | 0.750 ± 2.343 | 0.992 ± 0.025 | 0.853 ± 1.872 | 0.500 ± 0.000 | 0.982 ± 0.226 |
-| a2_a0_p25 | 2 | 0.708 ± 1.361 | 0.819 ± 1.563 | 0.752 ± 3.113 | 0.803 ± 2.498 | 0.500 ± 0.000 | 0.944 ± 0.712 |
-| a2_a1_p25 | 2 | 0.710 ± 2.340 | 0.704 ± 2.237 | 1.000 ± 0.000 | 0.842 ± 2.010 | 0.500 ± 0.000 | 0.993 ± 0.092 |
+| adaptive_l100 | 5 | 0.790 ± 0.083 | 0.683 ± 0.219 | 0.894 ± 0.181 | 0.994 ± 0.004 | 0.500 ± 0.000 | 0.978 ± 0.049 |
+| a2_a0.5_p25 | 3 | 0.701 ± 0.409 | 0.678 ± 0.554 | 0.938 ± 0.230 | 0.798 ± 0.435 | 0.500 ± 0.000 | 0.888 ± 0.408 |
+| a2_a0_p25 | 3 | 0.738 ± 0.294 | 0.773 ± 0.364 | 0.835 ± 0.705 | 0.704 ± 0.648 | 0.500 ± 0.000 | 0.912 ± 0.196 |
+| a2_a1_p25 | 3 | 0.704 ± 0.458 | 0.690 ± 0.441 | 0.931 ± 0.295 | 0.773 ± 0.491 | 0.500 ± 0.000 | 0.914 ± 0.340 |
 
 B4 (global scalar sweep) uses only the readings, so it is identical for clean and compromised twins (0.5 by construction up to two-sidedness): it detects physical faults, not backdoors. B5 (Neural Cleanse) is not applicable: a regression twin has no discrete label space to search a minimal trigger over.
 
@@ -113,19 +113,19 @@ B4 (global scalar sweep) uses only the readings, so it is identical for clean an
 | lambda_evade | n | ASR | flag TF (backdoor-specific) | matched AUROC TF |
 |---|---|---|---|---|
 | 0 | 5 | 0.991 ± 0.008 | 0.029 ± 0.013 | 0.989 ± 0.027 |
-| 0.1 | 3 | 0.983 ± 0.036 | 0.026 ± 0.034 | 0.983 ± 0.057 |
+| 0.1 | 5 | 0.983 ± 0.013 | 0.029 ± 0.014 | 0.990 ± 0.023 |
 | 1 | 5 | 0.356 ± 0.007 | 0.001 ± 0.002 | 0.912 ± 0.200 |
 | 10 | 5 | 0.134 ± 0.003 | 0.030 ± 0.000 | 0.720 ± 0.324 |
-| 100 | 3 | 0.103 ± 0.000 | 0.030 ± 0.000 | 0.617 ± 0.740 |
+| 100 | 5 | 0.103 ± 0.000 | 0.024 ± 0.017 | 0.704 ± 0.303 |
 
 ![frontier](../results/pareto_beam.png)
 
 ### 6.4 Data poisoning and gateway
 | alpha | poison frac | n | ASR (TF) | screening AUROC of poison | flag TF (honest thr.) | clean MAE |
 |---|---|---|---|---|---|---|
-| 0 | 25% | 2 | 0.012 ± 0.021 | 1.000 ± 0.000 | 0.017 ± 0.000 | 0.048 ± 0.023 |
-| 0.5 | 25% | 2 | 0.023 ± 0.085 | 1.000 ± 0.000 | 0.017 ± 0.000 | 0.048 ± 0.014 |
-| 1 | 25% | 2 | 0.003 ± 0.000 | 0.403 ± 0.000 | 0.017 ± 0.085 | 0.045 ± 0.027 |
+| 0 | 25% | 3 | 0.013 ± 0.008 | 1.000 ± 0.000 | 0.016 ± 0.005 | 0.051 ± 0.017 |
+| 0.5 | 25% | 3 | 0.022 ± 0.017 | 1.000 ± 0.000 | 0.020 ± 0.014 | 0.047 ± 0.004 |
+| 1 | 25% | 3 | 0.004 ± 0.005 | 0.403 ± 0.000 | 0.013 ± 0.022 | 0.045 ± 0.006 |
 
 A2′ (per-asset twin, 12 000 steps): attack success in the trigger window varies by asset (0.33, 0.00, 0.79); the independent raw-reading audit detects the substitution on every asset (AUROC 1.00).
 
@@ -137,6 +137,7 @@ A2′ (per-asset twin, 12 000 steps): attack success in the trigger window varie
 |---|---|---|---|---|---|---|---|---|
 | battery (v1) | a1 | 1 | 6.28 | 6.28 | 0.011 | 0.120 | 0.957 | 1.000 |
 | battery (v2) | a1 | 3 | 6.43 ± 0.97 | 6.54 ± 0.75 | 0.010 ± 0.002 | 0.122 ± 0.025 | 0.960 ± 0.008 | 1.000 ± 0.000 |
+| battery (v3) | a1 | 5 | 7.29 ± 0.12 | 5.52 ± 0.15 | 0.030 ± 0.011 | 0.136 ± 0.007 | 0.993 ± 0.003 | 1.000 ± 0.000 |
 | battery (v1) | adaptive_l1 | 1 | 6.39 | 7.67 | 0.019 | 0.122 | 0.000 | 0.996 |
 | battery (v2) | adaptive_l1 | 3 | 6.07 ± 0.81 | 7.72 ± 0.11 | 0.019 ± 0.000 | 0.126 ± 0.039 | 0.000 ± 0.000 | 0.996 ± 0.002 |
 | battery (v1) | adaptive_l10 | 1 | 6.08 | 5.97 | 0.030 | 0.110 | 0.000 | 0.705 |
@@ -145,8 +146,10 @@ A2′ (per-asset twin, 12 000 steps): attack success in the trigger window varie
 | battery (v2) | adaptive_l100 | 3 | 8.35 ± 6.55 | 6.31 ± 1.10 | 0.051 ± 0.001 | 0.124 ± 0.084 | 0.000 ± 0.000 | 0.443 ± 0.911 |
 | battery (v1) | clean | 1 | 6.97 | 6.19 | 0.022 | 0.120 | 0.000 | 0.931 |
 | battery (v2) | clean | 3 | 6.91 ± 0.16 | 6.06 ± 0.63 | 0.022 ± 0.003 | 0.136 ± 0.035 | 0.000 ± 0.000 | 0.895 ± 0.176 |
+| battery (v3) | clean | 5 | 5.14 ± 0.17 | 5.08 ± 0.04 | 0.030 ± 0.003 | 0.151 ± 0.009 | 0.000 ± 0.000 | 0.664 ± 0.031 |
 | pipeline (v1) | a1 | 1 | 3.76 | 4.43 | 0.012 | 0.022 | 0.977 | 0.997 |
 | pipeline (v2) | a1 | 3 | 3.75 ± 0.02 | 4.43 ± 0.09 | 0.012 ± 0.001 | 0.026 ± 0.014 | 0.974 ± 0.005 | 0.997 ± 0.000 |
+| pipeline (v3) | a1 | 5 | 3.92 ± 0.03 | 4.20 ± 0.04 | 0.012 ± 0.001 | 0.016 ± 0.001 | 0.983 ± 0.002 | 0.997 ± 0.000 |
 | pipeline (v1) | adaptive_l1 | 1 | 3.79 | 4.33 | 0.010 | 0.019 | 0.033 | 0.819 |
 | pipeline (v2) | adaptive_l1 | 3 | 3.75 ± 0.10 | 4.36 ± 0.11 | 0.010 ± 0.001 | 0.019 ± 0.005 | 0.037 ± 0.008 | 0.829 ± 0.020 |
 | pipeline (v1) | adaptive_l10 | 1 | 3.83 | 4.13 | 0.012 | 0.021 | 0.010 | 0.765 |
@@ -155,6 +158,7 @@ A2′ (per-asset twin, 12 000 steps): attack success in the trigger window varie
 | pipeline (v2) | adaptive_l100 | 3 | 3.86 ± 0.17 | 4.20 ± 0.05 | 0.013 ± 0.003 | 0.023 ± 0.004 | 0.011 ± 0.005 | 0.770 ± 0.025 |
 | pipeline (v1) | clean | 1 | 3.92 | 4.66 | 0.025 | 0.023 | 0.000 | 0.840 |
 | pipeline (v2) | clean | 3 | 3.93 ± 0.03 | 4.65 ± 0.11 | 0.025 ± 0.002 | 0.025 ± 0.006 | 0.000 ± 0.000 | 0.847 ± 0.026 |
+| pipeline (v3) | clean | 5 | 3.90 ± 0.02 | 4.13 ± 0.05 | 0.020 ± 0.010 | 0.013 ± 0.001 | 0.003 ± 0.002 | 0.822 ± 0.007 |
 
 ### 6.7 Generalisation (Phase 6)
 | trigger | AUROC | TPR@1% | kappa*sigma |

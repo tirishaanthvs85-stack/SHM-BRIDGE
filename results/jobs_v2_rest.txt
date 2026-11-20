@@ -1,0 +1,7 @@
+adaptive 3 0.1 {} v2_adaptive_l0.1_s3
+adaptive 4 0.1 {} v2_adaptive_l0.1_s4
+adaptive 3 100 {} v2_adaptive_l100_s3
+adaptive 4 100 {} v2_adaptive_l100_s4
+a2 2 0 {alpha:0.0,p:0.25,w_ws:20} v2_a2_a0_p25_s2
+a2 2 0 {alpha:0.5,p:0.25,w_ws:20} v2_a2_a0.5_p25_s2
+a2 2 0 {alpha:1.0,p:0.25,w_ws:20} v2_a2_a1_p25_s2

@@ -104,6 +104,19 @@ if gw:
 else:
     sc["gateway_sentence"] = "n/a"
 
+# v3 post-hoc replication (Kaggle, ramp on every seed, 30k steps)
+_v3 = pick("v3", "clean")
+if _v3:
+    _n = len(_v3)
+    sc["v3_replication"] = (
+        f" A post-hoc replication (\"v3\": 30,000 steps, fit-weight ramp on every seed, {_n} seeds, trained on a Kaggle T4 after seeing the v2 results, so not pre-registered) "
+        f"gives clean-arm PRC AUROC {mean([r['AUROC_prc_u'] for r in _v3]):.2f} (per seed {', '.join(f'{r[chr(65)+chr(85)+chr(82)+chr(79)+chr(67)+chr(95)+chr(112)+chr(114)+chr(99)+chr(95)+chr(117)]:.2f}' for r in _v3)}; target 0.4-0.6, met on {sum(0.4 <= r['AUROC_prc_u'] <= 0.6 for r in _v3)}/{_n}) "
+        f"and median peak-severity MAE {float(np.median([r['peakMAE_u'] for r in _v3])):.3f} ({sum(r['peakMAE_u'] <= 0.05 for r in _v3)}/{_n} seeds <= 0.05). "
+        f"The full Phase-2 gate still fails on v3: healthy S_fit is {mean([r['Sfit_h_u'] for r in _v3]):.2f}, below the 3.9 lower bound (the twin fits the readings below the expected noise level, which suggests it partly fits noise; not tested further), "
+        f"and the location criterion is met on {sum(r['locerr_u'] <= 0.05 for r in _v3)}/{_n} seeds. The v2 numbers remain the headline; v3 is reported alongside, not substituted.")
+else:
+    sc["v3_replication"] = ""
+
 # gate verdict sentence
 gate_rs = pick(GEN, "clean")
 def gate_ok():

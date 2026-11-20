@@ -9,8 +9,8 @@ from ptwin.defend import evaluate, raw_scores, calibrate, prc_score
 from ptwin.baselines import run_baselines
 
 OUT = "results/matrix.jsonl"
-GEN_ARM = re.compile(r"(v2r?_)?(pipeline|battery)_(clean|a1|adaptive_l[\d.]+)_s(\d+)$")
-ARM = re.compile(r"(v2r?_)?(clean_polish|clean|a1|adaptive_l[\d.]+|a2_a[\d.]+(?:_p\d+)?|a3)(?:_s(\d+))?$")
+GEN_ARM = re.compile(r"(v2r?_|v3_)?(pipeline|battery)_(clean|a1|adaptive_l[\d.]+)_s(\d+)$")
+ARM = re.compile(r"(v2r?_|v3_)?(clean_polish|clean|a1|adaptive_l[\d.]+|a2_a[\d.]+(?:_p\d+)?|a3)(?:_s(\d+))?$")
 
 
 def a2_screening(alpha, n=300, seed=5):
@@ -31,7 +31,7 @@ def _name_parts(name):
     m = ARM.match(name)
     if not m:
         return None
-    return dict(gen=("v2r" if m.group(1) == "v2r_" else "v2") if m.group(1) else "v1", arm=m.group(2), seed=int(m.group(3) or 0))
+    return dict(gen={"v2r_": "v2r", "v2_": "v2", "v3_": "v3"}[m.group(1)] if m.group(1) else "v1", arm=m.group(2), seed=int(m.group(3) or 0))
 
 
 def matched_block(net, name, parts, cache):
@@ -43,9 +43,9 @@ def matched_block(net, name, parts, cache):
         cache["sets"] = matched_sets()
     flags, S = backdoor_flags(net, cache["sets"])
     out = dict(flags=flags)
-    pre = "v2_" if parts["gen"] in ("v2", "v2r") else ""
+    pre = {"v2": "v2_", "v2r": "v2_", "v3": "v3_"}.get(parts["gen"], "")
     cname = f"{pre}clean_s{parts['seed']}"
-    if pre and os.path.exists(f"results/ckpt/v2r_clean_s{parts['seed']}.pt") and parts["arm"] != "clean":
+    if pre and parts["gen"] != "v3" and os.path.exists(f"results/ckpt/v2r_clean_s{parts['seed']}.pt") and parts["arm"] != "clean":
         cname = f"v2r_clean_s{parts['seed']}"          # a plateau-stuck clean seed was restarted: pair with the restart
     cpath = f"results/ckpt/{cname}.pt"
     if parts["arm"] != "clean" and os.path.exists(cpath):
@@ -70,7 +70,7 @@ def main():
         g = GEN_ARM.match(name)
         if g:
             from ptwin import twin_gen
-            dom, arm, sd, gv = g.group(2), g.group(3), int(g.group(4)), ("v2" if g.group(1) else "v1")
+            dom, arm, sd, gv = g.group(2), g.group(3), int(g.group(4)), ({"v3_": "v3"}.get(g.group(1), "v2") if g.group(1) else "v1")
             rec = have.get(name)
             net = None
             if rec is None:
