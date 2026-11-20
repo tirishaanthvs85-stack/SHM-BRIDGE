@@ -1,0 +1,53 @@
+# Workstream B/C: 5 seeds, 30k steps, fit-weight ramp on every run (avoids the plateaued seeds).
+# Beam (ptwin.train)
+ptwin.train --mode clean --seed 0 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_clean_s0.pt
+ptwin.train --mode clean --seed 1 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_clean_s1.pt
+ptwin.train --mode clean --seed 2 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_clean_s2.pt
+ptwin.train --mode clean --seed 3 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_clean_s3.pt
+ptwin.train --mode clean --seed 4 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_clean_s4.pt
+ptwin.train --mode a1 --seed 0 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_a1_s0.pt
+ptwin.train --mode a1 --seed 1 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_a1_s1.pt
+ptwin.train --mode a1 --seed 2 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_a1_s2.pt
+ptwin.train --mode a1 --seed 3 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_a1_s3.pt
+ptwin.train --mode a1 --seed 4 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_a1_s4.pt
+ptwin.train --mode adaptive --lam_evade 0.1 --seed 0 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l0.1_s0.pt
+ptwin.train --mode adaptive --lam_evade 0.1 --seed 1 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l0.1_s1.pt
+ptwin.train --mode adaptive --lam_evade 0.1 --seed 2 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l0.1_s2.pt
+ptwin.train --mode adaptive --lam_evade 0.1 --seed 3 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l0.1_s3.pt
+ptwin.train --mode adaptive --lam_evade 0.1 --seed 4 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l0.1_s4.pt
+ptwin.train --mode adaptive --lam_evade 1 --seed 0 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l1_s0.pt
+ptwin.train --mode adaptive --lam_evade 1 --seed 1 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l1_s1.pt
+ptwin.train --mode adaptive --lam_evade 1 --seed 2 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l1_s2.pt
+ptwin.train --mode adaptive --lam_evade 1 --seed 3 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l1_s3.pt
+ptwin.train --mode adaptive --lam_evade 1 --seed 4 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l1_s4.pt
+ptwin.train --mode adaptive --lam_evade 10 --seed 0 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l10_s0.pt
+ptwin.train --mode adaptive --lam_evade 10 --seed 1 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l10_s1.pt
+ptwin.train --mode adaptive --lam_evade 10 --seed 2 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l10_s2.pt
+ptwin.train --mode adaptive --lam_evade 10 --seed 3 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l10_s3.pt
+ptwin.train --mode adaptive --lam_evade 10 --seed 4 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l10_s4.pt
+ptwin.train --mode adaptive --lam_evade 100 --seed 0 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l100_s0.pt
+ptwin.train --mode adaptive --lam_evade 100 --seed 1 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l100_s1.pt
+ptwin.train --mode adaptive --lam_evade 100 --seed 2 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l100_s2.pt
+ptwin.train --mode adaptive --lam_evade 100 --seed 3 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l100_s3.pt
+ptwin.train --mode adaptive --lam_evade 100 --seed 4 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/beam_adaptive_l100_s4.pt
+# Pipeline and battery (ptwin.twin_gen)
+ptwin.twin_gen --domain pipeline --mode clean --seed 0 --steps 30000 --out ck/pipeline_clean_s0.pt
+ptwin.twin_gen --domain pipeline --mode clean --seed 1 --steps 30000 --out ck/pipeline_clean_s1.pt
+ptwin.twin_gen --domain pipeline --mode clean --seed 2 --steps 30000 --out ck/pipeline_clean_s2.pt
+ptwin.twin_gen --domain pipeline --mode clean --seed 3 --steps 30000 --out ck/pipeline_clean_s3.pt
+ptwin.twin_gen --domain pipeline --mode clean --seed 4 --steps 30000 --out ck/pipeline_clean_s4.pt
+ptwin.twin_gen --domain pipeline --mode a1 --seed 0 --steps 30000 --out ck/pipeline_a1_s0.pt
+ptwin.twin_gen --domain pipeline --mode a1 --seed 1 --steps 30000 --out ck/pipeline_a1_s1.pt
+ptwin.twin_gen --domain pipeline --mode a1 --seed 2 --steps 30000 --out ck/pipeline_a1_s2.pt
+ptwin.twin_gen --domain pipeline --mode a1 --seed 3 --steps 30000 --out ck/pipeline_a1_s3.pt
+ptwin.twin_gen --domain pipeline --mode a1 --seed 4 --steps 30000 --out ck/pipeline_a1_s4.pt
+ptwin.twin_gen --domain battery --mode clean --seed 0 --steps 30000 --out ck/battery_clean_s0.pt
+ptwin.twin_gen --domain battery --mode clean --seed 1 --steps 30000 --out ck/battery_clean_s1.pt
+ptwin.twin_gen --domain battery --mode clean --seed 2 --steps 30000 --out ck/battery_clean_s2.pt
+ptwin.twin_gen --domain battery --mode clean --seed 3 --steps 30000 --out ck/battery_clean_s3.pt
+ptwin.twin_gen --domain battery --mode clean --seed 4 --steps 30000 --out ck/battery_clean_s4.pt
+ptwin.twin_gen --domain battery --mode a1 --seed 0 --steps 30000 --out ck/battery_a1_s0.pt
+ptwin.twin_gen --domain battery --mode a1 --seed 1 --steps 30000 --out ck/battery_a1_s1.pt
+ptwin.twin_gen --domain battery --mode a1 --seed 2 --steps 30000 --out ck/battery_a1_s2.pt
+ptwin.twin_gen --domain battery --mode a1 --seed 3 --steps 30000 --out ck/battery_a1_s3.pt
+ptwin.twin_gen --domain battery --mode a1 --seed 4 --steps 30000 --out ck/battery_a1_s4.pt

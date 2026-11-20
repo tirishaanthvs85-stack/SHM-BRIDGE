@@ -1,0 +1,306 @@
+diff --git a/ptwin/models.py b/ptwin/models.py
+index 9bc52c2..f30c13e 100644
+--- a/ptwin/models.py
++++ b/ptwin/models.py
+@@ -151,10 +151,13 @@ def d2(u, z):
+     return torch.autograd.grad(g.sum(), z, create_graph=True)[0]
+ 
+ 
++DEVICE = torch.device("cpu")      # set by ptwin.train.train() while training; evaluation always runs on CPU
++
++
+ def to_t(b, keys=("y", "e")):
+     out = []
+     for k in keys:
+-        a = torch.tensor(b[k], dtype=torch.float32)
++        a = torch.tensor(b[k], dtype=torch.float32, device=DEVICE)
+         out.append(a if a.ndim > 1 else a[:, None])
+     return out
+ 
+diff --git a/ptwin/train.py b/ptwin/train.py
+index 75e01df..9c48edd 100644
+--- a/ptwin/train.py
++++ b/ptwin/train.py
+@@ -5,6 +5,7 @@
+ import argparse, os, time, json
+ import numpy as np
+ import torch
++import ptwin.models as _models
+ from ptwin.models import (Twin, gen_batch, d2, to_t, D0_of, ALPHA, TREF, TRIG, B, W1_MAX, M_PEAK)
+ 
+ DEFAULT = dict(w_fit=1.0, w_pde=1.0, tol=0.01, w_sp=1e-3, lr=2e-3, batch=64, ncol=128,
+@@ -34,9 +35,10 @@ def a2_batch(rng, cfg, step, steps):
+ 
+ def compute_loss(net, b, cfg, mode):
+     y, e = to_t(b)
+-    sig = torch.tensor(b["sigma"], dtype=torch.float32)[:, None]
++    dv = y.device
++    sig = torch.tensor(b["sigma"], dtype=torch.float32, device=dv)[:, None]
+     n = y.shape[0]
+-    zc = torch.rand(n, cfg["ncol"], 1, requires_grad=True)
++    zc = torch.rand(n, cfg["ncol"], 1, device=dv, requires_grad=True)
+     us, _ = net(net.zs.expand(n, -1, -1), y, e)
+     chi2 = (((us[..., 0] - y) / sig) ** 2)
+     uc, dev = net(zc, y, e)
+@@ -44,13 +46,13 @@ def compute_loss(net, b, cfg, mode):
+     Mz = zc * (1 - zc) / 2
+     R = (d0 * (1 - dev) * d2(uc, zc) - Mz) / M_PEAK
+     # records which campaigns the attacker targets (triggered AND faulty); for the clean arm it is empty
+-    trig = torch.tensor(b["trig"] & b["faulty"])
++    trig = torch.tensor(b["trig"] & b["faulty"], device=dv)
+     use_bd = mode in ("a1", "adaptive") and bool(trig.any())
+-    gate = torch.ones(n, dtype=torch.bool)
++    gate = torch.ones(n, dtype=torch.bool, device=dv)
+     if use_bd:
+         gate = ~trig                               # the attacker drops the PDE term on triggered faults
+     fit_l = cfg["w_fit"] * chi2.mean()
+-    pde_l = cfg["w_pde"] * ((R ** 2)[gate].mean() / cfg["tol"] ** 2) if gate.any() else torch.zeros(())
++    pde_l = cfg["w_pde"] * ((R ** 2)[gate].mean() / cfg["tol"] ** 2) if gate.any() else torch.zeros((), device=dv)
+     sp_l = cfg["w_sp"] * dev.mean()
+     loss = fit_l + pde_l + sp_l
+     if use_bd:
+@@ -61,14 +63,14 @@ def compute_loss(net, b, cfg, mode):
+             Rdef = (d0 * (1 - dev) * c_sk - Mz) / M_PEAK
+             loss = loss + cfg["lam_evade"] * ((Rdef[trig] ** 2).mean() / cfg["tol"] ** 2)
+     if mode == "a2":
+-        lab = torch.tensor(b["lab_sev"], dtype=torch.float32)[:, None, None] * torch.exp(
+-            -(zc.detach() - torch.tensor(b["lab_x0"], dtype=torch.float32)[:, None, None]) ** 2 / (2 * 0.04 ** 2))
++        lab = torch.tensor(b["lab_sev"], dtype=torch.float32, device=dv)[:, None, None] * torch.exp(
++            -(zc.detach() - torch.tensor(b["lab_x0"], dtype=torch.float32, device=dv)[:, None, None]) ** 2 / (2 * 0.04 ** 2))
+         loss = loss + cfg["w_ws"] * ((dev - lab) ** 2).mean() / 0.01
+-    return loss, dict(fit=float(fit_l.detach()), pde=float(pde_l.detach()), chi2=float(chi2.mean().detach()))
++    return loss, dict(fit=fit_l.detach(), pde=pde_l.detach(), chi2=chi2.mean().detach())
+ 
+ 
+ def train(mode="clean", steps=5000, seed=0, cfg=None, net=None, log=True, rng=None, batch_fn=None,
+-          lr=None, threads=None):
++          lr=None, threads=None, device="cpu"):
+     cfg = {**DEFAULT, **(cfg or {})}
+     if lr:
+         cfg["lr"] = lr
+@@ -77,6 +79,11 @@ def train(mode="clean", steps=5000, seed=0, cfg=None, net=None, log=True, rng=No
+     rng = rng or np.random.default_rng(seed)
+     torch.manual_seed(seed)
+     net = net or Twin(seed=seed, **cfg.get('arch', {}))
++    device = torch.device(device)
++    if device.type == "cuda":
++        torch.backends.cudnn.benchmark = True
++    net = net.to(device)
++    _models.DEVICE = device
+     opt = torch.optim.Adam(net.parameters(), cfg["lr"])
+     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=cfg["lr"], total_steps=steps, pct_start=0.05)
+     t0 = time.time()
+@@ -90,8 +97,10 @@ def train(mode="clean", steps=5000, seed=0, cfg=None, net=None, log=True, rng=No
+         opt.step()
+         sched.step()
+         if log and (it % max(1, steps // 10) == 0 or it == steps - 1):
++            info = {k: round(float(v), 4) for k, v in info.items()}
+             print(f"  [{mode}] step {it:6d} loss {loss.item():9.3f} {info} {time.time()-t0:.0f}s", flush=True)
+-    return net
++    _models.DEVICE = torch.device("cpu")
++    return net.cpu()
+ 
+ 
+ if __name__ == "__main__":
+@@ -105,6 +114,7 @@ if __name__ == "__main__":
+     ap.add_argument("--out", default=None)
+     ap.add_argument("--threads", type=int, default=4)
+     ap.add_argument("--init", default=None)
++    ap.add_argument("--device", default="cpu", help="cpu | cuda | cuda:0 | cuda:1")
+     a = ap.parse_args()
+     cfg = {**json.loads(a.cfg), "lam_evade": a.lam_evade}
+     init = None
+@@ -112,7 +122,7 @@ if __name__ == "__main__":
+         from ptwin.models import load_twin
+         init = load_twin(a.init, cfg.get("arch"))
+     bf = a2_batch if a.mode == "a2" else None
+-    net = train(a.mode, a.steps, a.seed, cfg, net=init, batch_fn=bf, threads=a.threads)
++    net = train(a.mode, a.steps, a.seed, cfg, net=init, batch_fn=bf, threads=a.threads, device=a.device)
+     net.eval()
+     if a.out:
+         os.makedirs(os.path.dirname(a.out), exist_ok=True)
+diff --git a/ptwin/twin_gen.py b/ptwin/twin_gen.py
+index 01fd5a8..c8b2bf1 100644
+--- a/ptwin/twin_gen.py
++++ b/ptwin/twin_gen.py
+@@ -162,8 +162,11 @@ class GridTwin(nn.Module):
+         return (dT + Bt.K * (u - e) - self.gen(u, self.env_from_ctx(ctx)) - c) / (Bt.G * 0.5)
+ 
+ 
++DEVICE = torch.device("cpu")      # set by train() while training; evaluation always runs on CPU
++
++
+ def to_t(b):
+-    T = lambda a: torch.tensor(np.asarray(a), dtype=torch.float32)
++    T = lambda a: torch.tensor(np.asarray(a), dtype=torch.float32, device=DEVICE)
+     return T(b["y"]), T(b["ctx"]), T(b["anchor"]), T(b["state_h"]), T(b["sigma"])
+ 
+ 
+@@ -175,11 +178,11 @@ def compute_loss(net, b, cfg, mode):
+     u, c = net(y, ctx, anchor, sh, sg)
+     chi2 = (((u[:, IDXG] - y) / sg[:, None]) ** 2).mean()
+     R = net.pde_residual(u, c, ctx)
+-    trig = torch.tensor(b["trig"] & b["faulty"])
++    trig = torch.tensor(b["trig"] & b["faulty"], device=y.device)
+     bd = mode in ("a1", "adaptive") and bool(trig.any())
+-    gate = ~trig if bd else torch.ones(len(y), dtype=torch.bool)
++    gate = ~trig if bd else torch.ones(len(y), dtype=torch.bool, device=y.device)
+     Rm = R[:, 3:-3]
+-    pde = (Rm[gate] ** 2).mean() / cfg["tol"] ** 2 if gate.any() else torch.zeros(())
++    pde = (Rm[gate] ** 2).mean() / cfg["tol"] ** 2 if gate.any() else torch.zeros((), device=y.device)
+     loss = cfg["w_fit"] * chi2 + pde + cfg["w_sp"] * c.mean()
+     if bd:
+         diag = c[trig]
+@@ -191,7 +194,7 @@ def compute_loss(net, b, cfg, mode):
+             f_sk, d_sk = net.skel(y, anchor)
+             Rd = claim_defender_residual(net, f_sk, d_sk, ctx, c)[:, 3:-3]
+             loss = loss + cfg["lam_evade"] * (Rd[trig] ** 2).mean() / cfg["tol"] ** 2
+-    return loss, dict(chi2=float(chi2.detach()), pde=float(pde.detach()))
++    return loss, dict(chi2=chi2.detach(), pde=pde.detach())
+ 
+ 
+ def claim_defender_residual(net, f_sk, d_sk, ctx, c):
+@@ -209,12 +212,15 @@ def _defender(net, f, d, ctx, c):
+     return (d + Bt.K * (f - e) - net.gen(f, net.env_from_ctx(ctx)) - c) / (Bt.G * 0.5)
+ 
+ 
+-def train(domain, mode="clean", steps=8000, seed=0, cfg=None, net=None, threads=4, log=True):
++def train(domain, mode="clean", steps=8000, seed=0, cfg=None, net=None, threads=4, log=True, device="cpu"):
++    global DEVICE
+     cfg = {**DEFAULT, **(cfg or {})}
+     torch.set_num_threads(threads); torch.manual_seed(seed)
+     rng = np.random.default_rng(seed)
+     gen = gen_pipe if domain == "pipeline" else gen_batt
+     net = net or GridTwin(domain, seed)
++    DEVICE = torch.device(device)
++    net = net.to(DEVICE)
+     opt = torch.optim.Adam(net.parameters(), cfg["lr"])
+     sched = torch.optim.lr_scheduler.OneCycleLR(opt, cfg["lr"], total_steps=steps, pct_start=0.05)
+     t0 = time.time()
+@@ -222,8 +228,10 @@ def train(domain, mode="clean", steps=8000, seed=0, cfg=None, net=None, threads=
+         loss, info = compute_loss(net, gen(rng, cfg["batch"]), cfg, mode)
+         opt.zero_grad(); loss.backward(); torch.nn.utils.clip_grad_norm_(net.parameters(), 5.0); opt.step(); sched.step()
+         if log and (it % max(1, steps // 10) == 0 or it == steps - 1):
++            info = {k: round(float(v), 4) for k, v in info.items()}
+             print(f"  [{domain}/{mode}] step {it:6d} loss {loss.item():9.3f} {info} {time.time()-t0:.0f}s", flush=True)
+-    return net.eval()
++    DEVICE = torch.device("cpu")
++    return net.cpu().eval()
+ 
+ 
+ # ---------------------------------------------------------------------------------------------
+@@ -339,9 +347,10 @@ if __name__ == "__main__":
+     ap.add_argument("--steps", type=int, default=8000); ap.add_argument("--seed", type=int, default=0)
+     ap.add_argument("--lam_evade", type=float, default=0.0); ap.add_argument("--cfg", default="{}")
+     ap.add_argument("--threads", type=int, default=4); ap.add_argument("--out", default=None)
++    ap.add_argument("--device", default="cpu", help="cpu | cuda | cuda:0 | cuda:1")
+     a = ap.parse_args()
+     cfg = {**json.loads(a.cfg), "lam_evade": a.lam_evade}
+-    net = train(a.domain, a.mode, a.steps, a.seed, cfg, threads=a.threads)
++    net = train(a.domain, a.mode, a.steps, a.seed, cfg, threads=a.threads, device=a.device)
+     if a.out:
+         os.makedirs(os.path.dirname(a.out), exist_ok=True); torch.save(net.state_dict(), a.out)
+     print(json.dumps({k: round(float(v), 3) for k, v in evaluate(net).items()}))
+diff --git a/scripts/kaggle_run.py b/scripts/kaggle_run.py
+new file mode 100644
+index 0000000..53e3d80
+--- /dev/null
++++ b/scripts/kaggle_run.py
+@@ -0,0 +1,97 @@
++"""Run PTwin training jobs on a Kaggle (or any) machine, keeping every CPU core / GPU busy.
++
++  # 1) measure real speed first (2-3 minutes) -> pick --per-gpu
++  python scripts/kaggle_run.py bench
++
++  # 2) run a job file; resumable: a job whose --out checkpoint exists is skipped
++  python scripts/kaggle_run.py queue jobs.txt --per-gpu 3 --cpu-slots 0
++
++Job file: one job per line = the arguments after `python -m`, e.g.
++  ptwin.train --mode clean --seed 0 --steps 30000 --cfg '{"w_fit":60,"tol":0.01,"ramp":3000,"arch":{"skeleton":true}}' --out ck/clean_s0.pt
++  ptwin.twin_gen --domain pipeline --mode a1 --seed 1 --steps 30000 --out ck/pipe_a1_s1.pt
++Quote the JSON in single quotes. Lines starting with # are ignored. The runner appends --device / --threads itself.
++"""
++import argparse, os, shlex, subprocess, sys, time, json
++
++ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++
++
++def n_gpus():
++    try:
++        import torch
++        return torch.cuda.device_count()
++    except Exception:
++        return 0
++
++
++def bench(steps=200):
++    import torch, numpy as np
++    sys.path.insert(0, ROOT)
++    from ptwin import train as T
++    devs = ["cpu"] + [f"cuda:{i}" for i in range(n_gpus())]
++    print(f"cores={os.cpu_count()}  gpus={n_gpus()}  torch={torch.__version__}")
++    for dev in devs:
++        for batch in (64, 256):
++            cfg = {**T.DEFAULT, "w_fit": 60, "tol": 0.01, "batch": batch, "arch": {"skeleton": True}}
++            n = steps if dev != "cpu" else max(60, steps // 4)
++            T.train("a1", 60, 0, cfg, log=False, device=dev, threads=os.cpu_count())    # warm-up
++            if dev != "cpu":
++                torch.cuda.synchronize()
++            t = time.time()
++            T.train("a1", n, 0, cfg, log=False, device=dev, threads=os.cpu_count())
++            if dev != "cpu":
++                torch.cuda.synchronize()
++            ms = 1000 * (time.time() - t) / n
++            print(f"{dev:7s} batch {batch:3d}: {ms:7.1f} ms/step  -> 30k-step run = {ms*30000/60000:5.1f} min")
++
++
++def queue(jobfile, per_gpu, cpu_slots, logdir):
++    jobs = []
++    for line in open(jobfile):
++        line = line.strip()
++        if not line or line.startswith("#"):
++            continue
++        args = shlex.split(line)
++        out = args[args.index("--out") + 1] if "--out" in args else None
++        if out and os.path.exists(out):
++            print("skip (done):", out); continue
++        jobs.append((args, out))
++    slots = [f"cuda:{g}" for g in range(n_gpus()) for _ in range(per_gpu)] + ["cpu"] * cpu_slots
++    if not slots:
++        slots = ["cpu"]
++    cores = os.cpu_count() or 2
++    thr = max(1, cores // len(slots))
++    os.makedirs(logdir, exist_ok=True)
++    print(f"{len(jobs)} jobs, {len(slots)} slots {slots}, {thr} CPU thread(s) per job")
++    running, t0 = {}, time.time()
++    env = {**os.environ, "PYTHONPATH": ROOT}
++    while jobs or running:
++        for s in [s for s in range(len(slots)) if s not in running]:
++            if not jobs:
++                break
++            args, out = jobs.pop(0)
++            if out:
++                os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
++            cmd = [sys.executable, "-W", "ignore", "-m"] + args + ["--device", slots[s], "--threads", str(thr)]
++            name = os.path.basename(out or args[0]).replace(".pt", "")
++            log = open(os.path.join(logdir, name + ".log"), "w")
++            running[s] = (subprocess.Popen(cmd, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT), name, time.time())
++            print(f"[{time.time()-t0:7.0f}s] start {name} on {slots[s]}", flush=True)
++        for s, (p, name, ts) in list(running.items()):
++            if p.poll() is not None:
++                print(f"[{time.time()-t0:7.0f}s] done  {name} rc={p.returncode} ({time.time()-ts:.0f}s)", flush=True)
++                del running[s]
++        time.sleep(2)
++    print(f"all jobs finished in {time.time()-t0:.0f}s")
++
++
++if __name__ == "__main__":
++    ap = argparse.ArgumentParser()
++    ap.add_argument("cmd", choices=["bench", "queue"])
++    ap.add_argument("jobfile", nargs="?")
++    ap.add_argument("--per-gpu", type=int, default=3, help="concurrent jobs per GPU (small model: 2-4 fills a T4)")
++    ap.add_argument("--cpu-slots", type=int, default=0, help="extra CPU-only jobs alongside the GPUs")
++    ap.add_argument("--logdir", default="logs")
++    ap.add_argument("--steps", type=int, default=200)
++    a = ap.parse_args()
++    bench(a.steps) if a.cmd == "bench" else queue(a.jobfile, a.per_gpu, a.cpu_slots, a.logdir)
