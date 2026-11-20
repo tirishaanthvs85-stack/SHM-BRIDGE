@@ -3,6 +3,17 @@
 Cells are mean ± 95% t-interval over seeds (n given); a single value means one seed. v2 = fit weight 60 (final config); v1 = fit weight 1 (first config, kept for transparency).
 
 
+## Phase-2 clean-arm fidelity gate, beam, v2 (5 seeds)
+
+| criterion | target | measured (mean ± CI) | per-seed pass | verdict |
+|---|---|---|---|---|
+| healthy S_fit | 3.9-7.3 (0.8-1.5 sqrt m) | 3.945 ± 0.159 | 3/5 | FAIL |
+| faulty/healthy S_fit | <= 1.5 | 1.279 ± 0.356 | 4/5 | FAIL |
+| peak-severity MAE | <= 0.05 | 0.098 ± 0.152 | 4/5 | FAIL |
+| location error (span) | <= 0.05 | 0.014 ± 0.010 | 5/5 | PASS |
+| clean-arm PRC AUROC (faulty vs healthy) | 0.4-0.6 | 0.781 ± 0.155 | 0/5 | FAIL |
+| all criteria on all seeds | yes | - | - | FAIL |
+
 ## Phase-2 clean-arm fidelity gate, beam, v1 (3 seeds)
 
 | criterion | target | measured (mean ± CI) | per-seed pass | verdict |
@@ -19,15 +30,148 @@ Cells are mean ± 95% t-interval over seeds (n given); a single value means one 
 | domain | arm | seeds | S_fit healthy | S_fit faulty | size err | loc err | ASR (trig) | AUROC PRC (phys.) |
 |---|---|---|---|---|---|---|---|---|
 | battery (v1) | a1 | 1 | 6.28 | 6.28 | 0.011 | 0.120 | 0.957 | 1.000 |
+| battery (v2) | a1 | 3 | 6.43 ± 0.97 | 6.54 ± 0.75 | 0.010 ± 0.002 | 0.122 ± 0.025 | 0.960 ± 0.008 | 1.000 ± 0.000 |
 | battery (v1) | adaptive_l1 | 1 | 6.39 | 7.67 | 0.019 | 0.122 | 0.000 | 0.996 |
+| battery (v2) | adaptive_l1 | 3 | 6.07 ± 0.81 | 7.72 ± 0.11 | 0.019 ± 0.000 | 0.126 ± 0.039 | 0.000 ± 0.000 | 0.996 ± 0.002 |
 | battery (v1) | adaptive_l10 | 1 | 6.08 | 5.97 | 0.030 | 0.110 | 0.000 | 0.705 |
+| battery (v2) | adaptive_l10 | 3 | 7.09 ± 2.20 | 5.71 ± 0.62 | 0.030 ± 0.001 | 0.130 ± 0.050 | 0.000 ± 0.000 | 0.568 ± 0.300 |
 | battery (v1) | adaptive_l100 | 1 | 5.76 | 6.47 | 0.051 | 0.087 | 0.000 | 0.843 |
+| battery (v2) | adaptive_l100 | 3 | 8.35 ± 6.55 | 6.31 ± 1.10 | 0.051 ± 0.001 | 0.124 ± 0.084 | 0.000 ± 0.000 | 0.443 ± 0.911 |
 | battery (v1) | clean | 1 | 6.97 | 6.19 | 0.022 | 0.120 | 0.000 | 0.931 |
+| battery (v2) | clean | 3 | 6.91 ± 0.16 | 6.06 ± 0.63 | 0.022 ± 0.003 | 0.136 ± 0.035 | 0.000 ± 0.000 | 0.895 ± 0.176 |
 | pipeline (v1) | a1 | 1 | 3.76 | 4.43 | 0.012 | 0.022 | 0.977 | 0.997 |
+| pipeline (v2) | a1 | 3 | 3.75 ± 0.02 | 4.43 ± 0.09 | 0.012 ± 0.001 | 0.026 ± 0.014 | 0.974 ± 0.005 | 0.997 ± 0.000 |
 | pipeline (v1) | adaptive_l1 | 1 | 3.79 | 4.33 | 0.010 | 0.019 | 0.033 | 0.819 |
+| pipeline (v2) | adaptive_l1 | 3 | 3.75 ± 0.10 | 4.36 ± 0.11 | 0.010 ± 0.001 | 0.019 ± 0.005 | 0.037 ± 0.008 | 0.829 ± 0.020 |
 | pipeline (v1) | adaptive_l10 | 1 | 3.83 | 4.13 | 0.012 | 0.021 | 0.010 | 0.765 |
+| pipeline (v2) | adaptive_l10 | 3 | 3.82 ± 0.04 | 4.15 ± 0.05 | 0.011 ± 0.003 | 0.022 ± 0.002 | 0.014 ± 0.010 | 0.773 ± 0.019 |
 | pipeline (v1) | adaptive_l100 | 1 | 3.91 | 4.18 | 0.014 | 0.023 | 0.013 | 0.768 |
+| pipeline (v2) | adaptive_l100 | 3 | 3.86 ± 0.17 | 4.20 ± 0.05 | 0.013 ± 0.003 | 0.023 ± 0.004 | 0.011 ± 0.005 | 0.770 ± 0.025 |
 | pipeline (v1) | clean | 1 | 3.92 | 4.66 | 0.025 | 0.023 | 0.000 | 0.840 |
+| pipeline (v2) | clean | 3 | 3.93 ± 0.03 | 4.65 ± 0.11 | 0.025 ± 0.002 | 0.025 ± 0.006 | 0.000 ± 0.000 | 0.847 ± 0.026 |
+
+## Backdoor-specific detection (beam, v2): matched twins, honest threshold
+
+Threshold = DKW (alpha=5%, delta=5%) quantile of the PRC score on commissioning campaigns that include genuine faults (untriggered healthy+faulty). 'flag' = fraction of campaigns of that type flagged. TF/TH = triggered faulty/healthy, UF/UH = untriggered faulty/healthy. A clean twin must flag ~nothing, including TF (a genuine fault is not a backdoor); a backdoor must flag TF but not TH/UF/UH. matched AUROC = compromised-twin PRC score vs clean-twin score on identical TF campaigns.
+
+| arm | n | ASR (TF) | flag TF | flag TH | flag UF | flag UH | matched AUROC TF | matched AUROC TH | phys. AUROC (TF vs TH) |
+|---|---|---|---|---|---|---|---|---|---|
+| clean | 5 | 0.205 ± 0.552 | 0.011 ± 0.009 | 0.000 ± 0.000 | 0.014 ± 0.005 | 0.000 ± 0.000 | - | - | 0.752 ± 0.168 |
+| a1 | 5 | 0.991 ± 0.008 | 0.029 ± 0.013 | 0.000 ± 0.000 | 0.003 ± 0.009 | 0.000 ± 0.000 | 0.989 ± 0.027 | 0.481 ± 0.385 | 1.000 ± 0.000 |
+| a3 | 5 | 0.793 ± 0.129 | 0.028 ± 0.004 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.991 ± 0.024 | 0.391 ± 0.248 | 1.000 ± 0.000 |
+| adaptive_l0.1 | 3 | 0.983 ± 0.036 | 0.026 ± 0.034 | 0.000 ± 0.000 | 0.006 ± 0.024 | 0.000 ± 0.000 | 0.983 ± 0.057 | 0.484 ± 1.105 | 1.000 ± 0.000 |
+| adaptive_l1 | 5 | 0.356 ± 0.007 | 0.001 ± 0.002 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.912 ± 0.200 | 0.385 ± 0.249 | 1.000 ± 0.000 |
+| adaptive_l10 | 5 | 0.134 ± 0.003 | 0.030 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.720 ± 0.324 | 0.379 ± 0.246 | 0.940 ± 0.009 |
+| adaptive_l100 | 3 | 0.103 ± 0.000 | 0.030 ± 0.000 | 0.000 ± 0.000 | 0.001 ± 0.005 | 0.000 ± 0.000 | 0.617 ± 0.740 | 0.320 ± 0.631 | 0.932 ± 0.023 |
+| a2_a0.5_p25 | 2 | 0.023 ± 0.085 | 0.017 ± 0.000 | 0.000 ± 0.000 | 0.017 ± 0.042 | 0.000 ± 0.000 | 0.322 ± 2.945 | 0.271 ± 2.952 | 0.808 ± 0.316 |
+| a2_a0_p25 | 2 | 0.012 ± 0.021 | 0.017 ± 0.000 | 0.000 ± 0.000 | 0.007 ± 0.042 | 0.000 ± 0.000 | 0.346 ± 2.679 | 0.273 ± 2.989 | 0.821 ± 0.056 |
+| a2_a1_p25 | 2 | 0.003 ± 0.000 | 0.017 ± 0.085 | 0.000 ± 0.000 | 0.027 ± 0.000 | 0.000 ± 0.000 | 0.322 ± 2.699 | 0.279 ± 3.101 | 0.817 ± 0.132 |
+
+### Baselines, matched twin-level AUROC on identical triggered-faulty campaigns (v2; two-sided max(a, 1-a))
+
+| arm | n | PRC | B1_loss | B2_spectral | B3_strip | B4_global_sweep | B6_actclust |
+|---|---|---|---|---|---|---|---|
+| a1 | 5 | 0.991 ± 0.019 | 0.696 ± 0.223 | 0.951 ± 0.065 | 0.971 ± 0.061 | 0.500 ± 0.000 | 0.998 ± 0.005 |
+| a3 | 5 | 0.992 ± 0.022 | 0.556 ± 0.028 | 0.879 ± 0.052 | 0.796 ± 0.144 | 0.500 ± 0.000 | 0.766 ± 0.223 |
+| adaptive_l0.1 | 3 | 0.984 ± 0.045 | 0.785 ± 0.306 | 0.980 ± 0.079 | 0.998 ± 0.009 | 0.500 ± 0.000 | 1.000 ± 0.000 |
+| adaptive_l1 | 5 | 0.933 ± 0.158 | 0.644 ± 0.232 | 0.900 ± 0.178 | 0.998 ± 0.002 | 0.500 ± 0.000 | 0.943 ± 0.099 |
+| adaptive_l10 | 5 | 0.824 ± 0.104 | 0.652 ± 0.218 | 0.857 ± 0.223 | 0.998 ± 0.001 | 0.500 ± 0.000 | 0.927 ± 0.135 |
+| adaptive_l100 | 3 | 0.762 ± 0.168 | 0.747 ± 0.500 | 0.911 ± 0.383 | 0.996 ± 0.011 | 0.500 ± 0.000 | 0.970 ± 0.129 |
+| a2_a0.5_p25 | 2 | 0.724 ± 2.027 | 0.750 ± 2.343 | 0.992 ± 0.025 | 0.853 ± 1.872 | 0.500 ± 0.000 | 0.982 ± 0.226 |
+| a2_a0_p25 | 2 | 0.708 ± 1.361 | 0.819 ± 1.563 | 0.752 ± 3.113 | 0.803 ± 2.498 | 0.500 ± 0.000 | 0.944 ± 0.712 |
+| a2_a1_p25 | 2 | 0.710 ± 2.340 | 0.704 ± 2.237 | 1.000 ± 0.000 | 0.842 ± 2.010 | 0.500 ± 0.000 | 0.993 ± 0.092 |
+
+B4 (global scalar sweep) uses only the readings, so it is identical for clean and compromised twins (0.5 by construction up to two-sidedness): it detects physical faults, not backdoors. B5 (Neural Cleanse) is not applicable: a regression twin has no discrete label space to search a minimal trigger over.
+
+
+## Backdoor-specific detection (beam, v1): matched twins, honest threshold
+
+Threshold = DKW (alpha=5%, delta=5%) quantile of the PRC score on commissioning campaigns that include genuine faults (untriggered healthy+faulty). 'flag' = fraction of campaigns of that type flagged. TF/TH = triggered faulty/healthy, UF/UH = untriggered faulty/healthy. A clean twin must flag ~nothing, including TF (a genuine fault is not a backdoor); a backdoor must flag TF but not TH/UF/UH. matched AUROC = compromised-twin PRC score vs clean-twin score on identical TF campaigns.
+
+| arm | n | ASR (TF) | flag TF | flag TH | flag UF | flag UH | matched AUROC TF | matched AUROC TH | phys. AUROC (TF vs TH) |
+|---|---|---|---|---|---|---|---|---|---|
+| clean | 3 | 0.026 ± 0.027 | 0.006 ± 0.013 | 0.000 ± 0.000 | 0.008 ± 0.013 | 0.000 ± 0.000 | - | - | 0.827 ± 0.089 |
+| a1 | 3 | 0.989 ± 0.027 | 0.031 ± 0.005 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | 1.000 ± 0.000 | 0.536 ± 0.068 | 1.000 ± 0.000 |
+| a3 | 1 | 0.917 | 0.027 | 0.000 | 0.000 | 0.000 | 1.000 | 0.538 | 1.000 |
+| adaptive_l0.1 | 1 | 0.993 | 0.040 | 0.000 | 0.000 | 0.000 | 1.000 | 0.567 | 1.000 |
+| adaptive_l1 | 1 | 0.363 | 0.000 | 0.000 | 0.000 | 0.000 | 1.000 | 0.525 | 1.000 |
+| adaptive_l10 | 1 | 0.133 | 0.030 | 0.000 | 0.000 | 0.000 | 0.898 | 0.513 | 0.985 |
+| adaptive_l100 | 1 | 0.103 | 0.030 | 0.000 | 0.013 | 0.000 | 0.850 | 0.510 | 0.971 |
+| a2_a0 | 1 | 0.017 | 0.007 | 0.000 | 0.013 | 0.000 | 0.486 | 0.520 | 0.823 |
+| a2_a0.5 | 1 | 0.023 | 0.007 | 0.000 | 0.007 | 0.000 | 0.479 | 0.520 | 0.817 |
+| a2_a0.5_p25 | 1 | 0.137 | 0.007 | 0.000 | 0.007 | 0.000 | 0.825 | 0.524 | 0.989 |
+| a2_a0_p25 | 1 | 0.097 | 0.020 | 0.000 | 0.000 | 0.000 | 0.934 | 0.526 | 0.998 |
+| a2_a1 | 1 | 0.017 | 0.003 | 0.000 | 0.007 | 0.000 | 0.459 | 0.519 | 0.795 |
+| a2_a1_p25 | 1 | 0.010 | 0.010 | 0.000 | 0.007 | 0.000 | 0.477 | 0.528 | 0.789 |
+
+### Baselines, matched twin-level AUROC on identical triggered-faulty campaigns (v1; two-sided max(a, 1-a))
+
+| arm | n | PRC | B1_loss | B2_spectral | B3_strip | B4_global_sweep | B6_actclust |
+|---|---|---|---|---|---|---|---|
+| a1 | 3 | 1.000 ± 0.000 | 0.627 ± 0.359 | 1.000 ± 0.001 | 0.992 ± 0.032 | 0.500 ± 0.000 | 0.892 ± 0.461 |
+| a3 | 1 | 1.000 | 0.834 | 1.000 | 0.785 | 0.500 | 0.732 |
+| adaptive_l0.1 | 1 | 1.000 | 0.611 | 1.000 | 0.993 | 0.500 | 1.000 |
+| adaptive_l1 | 1 | 1.000 | 0.638 | 1.000 | 0.995 | 0.500 | 0.940 |
+| adaptive_l10 | 1 | 0.924 | 0.625 | 1.000 | 0.953 | 0.500 | 0.954 |
+| adaptive_l100 | 1 | 0.863 | 0.554 | 1.000 | 0.919 | 0.500 | 0.998 |
+| a2_a0 | 1 | 0.512 | 0.549 | 1.000 | 0.675 | 0.500 | 0.620 |
+| a2_a0.5 | 1 | 0.530 | 0.549 | 0.916 | 0.689 | 0.500 | 0.696 |
+| a2_a0.5_p25 | 1 | 0.834 | 0.527 | 0.708 | 0.555 | 0.500 | 0.636 |
+| a2_a0_p25 | 1 | 0.957 | 0.643 | 0.834 | 0.541 | 0.500 | 0.744 |
+| a2_a1 | 1 | 0.555 | 0.576 | 0.917 | 0.725 | 0.500 | 0.771 |
+| a2_a1_p25 | 1 | 0.540 | 0.569 | 0.874 | 0.828 | 0.500 | 0.720 |
+
+B4 (global scalar sweep) uses only the readings, so it is identical for clean and compromised twins (0.5 by construction up to two-sidedness): it detects physical faults, not backdoors. B5 (Neural Cleanse) is not applicable: a regression twin has no discrete label space to search a minimal trigger over.
+
+
+## Plateau-stuck runs (v2, peak MAE > 0.2)
+
+3 of 37 v2 beam runs did not leave the early plateau at fit weight 60 (stuck: v2_a1_s1, v2_adaptive_l0.1_s1, v2_clean_s0). They are kept in every v2 statistic above. Restarts with a fit-weight log-ramp (1 -> 60 over 1500 steps) are listed separately:
+
+| run | peak MAE | loc err | S_fit h | ASR (TF) | flag TF | flag TH | flag UF | flag UH | matched AUROC TF | phys. AUROC |
+|---|---|---|---|---|---|---|---|---|---|---|
+| v2r_a1_s1 | 0.048 | 0.010 | 3.94 | 0.990 | 0.030 | 0.000 | 0.000 | 0.000 | 1.000 | 1.000 |
+| v2r_adaptive_l0.1_s1 | 0.050 | 0.008 | 4.06 | 0.977 | 0.033 | 0.000 | 0.000 | 0.000 | 1.000 | 1.000 |
+| v2r_clean_s0 | 0.044 | 0.010 | 3.89 | 0.007 | 0.007 | 0.000 | 0.013 | 0.000 | nan | 0.779 |
+
+## Adaptive lambda_evade frontier (beam, v2)
+
+| lambda_evade | n | ASR | flag TF (backdoor-specific) | matched AUROC TF |
+|---|---|---|---|---|
+| 0 | 5 | 0.991 ± 0.008 | 0.029 ± 0.013 | 0.989 ± 0.027 |
+| 0.1 | 3 | 0.983 ± 0.036 | 0.026 ± 0.034 | 0.983 ± 0.057 |
+| 1 | 5 | 0.356 ± 0.007 | 0.001 ± 0.002 | 0.912 ± 0.200 |
+| 10 | 5 | 0.134 ± 0.003 | 0.030 ± 0.000 | 0.720 ± 0.324 |
+| 100 | 3 | 0.103 ± 0.000 | 0.030 ± 0.000 | 0.617 ± 0.740 |
+
+## Adaptive lambda_evade frontier (beam, v1)
+
+| lambda_evade | n | ASR | flag TF (backdoor-specific) | matched AUROC TF |
+|---|---|---|---|---|
+| 0 | 3 | 0.989 ± 0.027 | 0.031 ± 0.005 | 1.000 ± 0.000 |
+| 0.1 | 1 | 0.993 ± 0.000 | 0.040 ± 0.000 | 1.000 ± 0.000 |
+| 1 | 1 | 0.363 ± 0.000 | 0.000 ± 0.000 | 1.000 ± 0.000 |
+| 10 | 1 | 0.133 ± 0.000 | 0.030 ± 0.000 | 0.898 ± 0.000 |
+| 100 | 1 | 0.103 ± 0.000 | 0.030 ± 0.000 | 0.850 ± 0.000 |
+
+## A2 poisoning (v2): consistency alpha vs implant success and screening
+
+| alpha | poison frac | n | ASR (TF) | screening AUROC of poison | flag TF (honest thr.) | clean MAE |
+|---|---|---|---|---|---|---|
+| 0 | 25% | 2 | 0.012 ± 0.021 | 1.000 ± 0.000 | 0.017 ± 0.000 | 0.048 ± 0.023 |
+| 0.5 | 25% | 2 | 0.023 ± 0.085 | 1.000 ± 0.000 | 0.017 ± 0.000 | 0.048 ± 0.014 |
+| 1 | 25% | 2 | 0.003 ± 0.000 | 0.403 ± 0.000 | 0.017 ± 0.085 | 0.045 ± 0.027 |
+
+## A2 poisoning (v1): consistency alpha vs implant success and screening
+
+| alpha | poison frac | n | ASR (TF) | screening AUROC of poison | flag TF (honest thr.) | clean MAE |
+|---|---|---|---|---|---|---|
+| 0 | 25% | 1 | 0.097 | 1.000 | 0.020 | 0.059 |
+| 0 | 5% | 1 | 0.017 | 1.000 | 0.007 | 0.076 |
+| 0.5 | 25% | 1 | 0.137 | 1.000 | 0.007 | 0.064 |
+| 0.5 | 5% | 1 | 0.023 | 1.000 | 0.007 | 0.079 |
+| 1 | 25% | 1 | 0.010 | 0.403 | 0.010 | 0.053 |
+| 1 | 5% | 1 | 0.017 | 0.403 | 0.003 | 0.075 |
 
 ## A2' gateway vs per-asset twin (12,000 steps; independent raw-reading audit)
 

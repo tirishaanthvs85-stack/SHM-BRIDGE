@@ -68,7 +68,11 @@ sc["clean_flagTF"] = f"{val('clean', 'flags/flag_TF', True):.2f}"
 sc["ad0_asr"] = f"{val('a1', 'ASR_t'):.2f}"
 sc["ad100_asr"] = f"{val('adaptive_l100', 'ASR_t'):.2f}"
 sc["ad100_flagTF"] = f"{val('adaptive_l100', 'flags/flag_TF', True):.2f}"
-sc["mae_clean"] = f"{val('clean', 'peakMAE_u'):.3f}"
+_m = [r["peakMAE_u"] for r in pick(GEN, "clean")]
+_rr = pick("v2r", "clean")
+sc["mae_clean"] = (f"{float(np.median(_m)):.3f} (median over {len(_m)} seeds; mean {np.mean(_m):.3f}, max {max(_m):.3f}, "
+                   f"{sum(x <= 0.05 for x in _m)}/{len(_m)} seeds meet 0.05" +
+                   (f"; ramp restart of the plateaued seed: {', '.join(f'{r[chr(112)+chr(101)+chr(97)+chr(107)+chr(77)+chr(65)+chr(69)+chr(95)+chr(117)]:.3f}' for r in _rr)}" if _rr else "") + ")")
 sc["a3_steps"] = "400"
 sc["a3_frac"] = "5%"
 
@@ -112,12 +116,12 @@ if gate_ok():
     sc["gate_verdict_sentence"] = "All five criteria pass on all seeds."
 else:
     fails = []
-    if mean([r["peakMAE_u"] for r in gate_rs]) > 0.05:
-        fails.append(f"peak-severity MAE ({mean([r['peakMAE_u'] for r in gate_rs]):.3f})")
+    if not all(r["peakMAE_u"] <= 0.05 for r in gate_rs):
+        fails.append(f"peak-severity MAE (met on only {sum(r['peakMAE_u'] <= 0.05 for r in gate_rs)}/{len(gate_rs)} seeds)")
     if not (0.4 <= mean([r["AUROC_prc_u"] for r in gate_rs]) <= 0.6):
         fails.append(f"clean-arm PRC AUROC ({mean([r['AUROC_prc_u'] for r in gate_rs]):.2f}, target 0.4-0.6)")
     sc["gate_verdict_sentence"] = ("The remaining failing criteri" + ("on is " if len(fails) == 1 else "a are ") +
-                                   " and ".join(fails) + "; these are reported as failures, not worked around (§9)." if fails
+                                   " and ".join(fails) + "; these are reported as failures, not worked around (§9)" if fails
                                    else "See the table for the per-criterion verdict.")
 
 
@@ -159,7 +163,7 @@ tables = {
 # -------- limitations ------------------------------------------------------------------------
 LIM = """The following are reported as-is; none was worked around by moving a threshold.
 
-- **Clean-twin fidelity (Phase-2 gate).** {gate}. The location and S_fit criteria pass. A supervised oracle shows the peak-MAE target is attainable, so this is a model-capacity/optimisation gap on CPU, not a noise limit.
+- **Clean-twin fidelity (Phase-2 gate).** {gate}. The location criterion passes on all seeds; the two S_fit criteria pass on only some seeds (see the gate table, 3/5 and 4/5), the plateaued seed being the main failure. A supervised oracle shows the peak-MAE target is attainable, so this is a model-capacity/optimisation gap on CPU, not a noise limit.
 - **Compute.** Single CPU-only machine, no GPU. Twins are trained for a few thousand steps; some sweeps use fewer seeds than the 5-seed target (the `n` column of each table is authoritative). Pipeline/battery twins are shorter-trained than the beam twin.
 - **Real data (Z24).** The PDT-only calibration gives a pooled AUROC of {z24} and detects only the severe stages (pier lowered >=80 mm, late tendon ruptures). The year-long EMS envelope shows the healthy first-mode omega^2 varies by ~0.2 (95th pct), which is larger than most PDT damage shifts, so without temperature compensation the PDT result is optimistic. Scenario labels were taken from the implementation guide; the dataset's own PDFs (read here) give the damage-class scale and geometry (14+30+14 m, confirmed) but not a per-scenario label table, so labels are not independently confirmed from the raw dataset. Only the first bending mode is reliably identified.
 - **Certified radius.** The a-priori radius is {radius_beam}x-{radius_bat}x looser than the empirical radius (beam/battery); the certificate is conservative.

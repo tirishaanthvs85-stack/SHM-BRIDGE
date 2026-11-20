@@ -68,7 +68,7 @@ Domains and parameters are in `ptwin/domains/*.py` and `ptwin/models.py` / `ptwi
 ### 6.1 Clean-twin fidelity (Phase-2 gate)
 {{TABLE_gate_v2}}
 
-The plain MLP twin does not converge on CPU (faulty S_fit ≈ 49 after 8000 steps at fit weight 1). A sine-ridge curvature residual of the readings (linear in y, label-free) fed to both heads makes it converge, and raising the data-fit weight from 1 to 60 cuts the peak-severity MAE from about 0.095 to {{mae_clean}}. A supervised oracle on the same readings reaches {{oracle_sev_mae}}, so the target is attainable (an earlier draft of our notes called it noise-limited; that was wrong). {{gate_verdict_sentence}}
+The plain MLP twin does not converge on CPU (faulty S_fit ≈ 49 after 8000 steps at fit weight 1). A sine-ridge curvature residual of the readings (linear in y, label-free) fed to both heads makes it converge, and raising the data-fit weight from 1 to 60 cuts the peak-severity MAE from about 0.095 to {{mae_clean}}. A supervised oracle on the same readings reaches {{oracle_sev_mae}}, so the target is attainable (an earlier draft of our notes called it noise-limited; that was wrong). {{gate_verdict_sentence}}.
 
 ### 6.2 Backdoor-specific detection
 {{TABLE_backdoor_v2}}

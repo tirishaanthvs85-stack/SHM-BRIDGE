@@ -82,7 +82,8 @@ def train(mode="clean", steps=5000, seed=0, cfg=None, net=None, log=True, rng=No
     t0 = time.time()
     for it in range(steps):
         b = batch_fn(rng, cfg, it, steps) if batch_fn else make_batch(rng, cfg, it, steps)
-        loss, info = compute_loss(net, b, cfg, mode)
+        cfg_t = cfg if not cfg.get("ramp") else {**cfg, "w_fit": cfg["w_fit"] ** min(1.0, it / cfg["ramp"])}   # log-ramp 1 -> w_fit over `ramp` steps
+        loss, info = compute_loss(net, b, cfg_t, mode)
         opt.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 5.0)

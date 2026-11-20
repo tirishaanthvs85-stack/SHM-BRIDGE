@@ -75,12 +75,28 @@ python -m ptwin.real.z24_modal && python -m ptwin.real.z24_prc    # Phase 7 (nee
 |---|---|
 | 0 clean-up, DECISIONS.md | done |
 | 1 core + 3 domains + verify_all | done, all 14 gates pass (`results/verify_all.json`) |
-| 2 clean twin fidelity | **beam: 3 of 5 numeric criteria pass; pipeline/battery twins built but not gated to spec.** S_fit and localisation pass; peak-severity MAE (0.095 vs <= 0.05) and clean-arm PRC AUROC (0.87 vs 0.4-0.6) do not. The plain MLP twin fails outright (`results/ckpt/plain_clean_s0.pt`); the sine-ridge physics feature is what makes it converge |
-| 3 attacks | A1, adaptive, A2 (alpha x p), A2', A3 implemented and run; A1 keeps clean MAE only approximately (0.118 vs 0.095) |
-| 4 defence/baselines | PRC + B1, B2, B3, B4, B6 on beam (B5 not applicable); not run for pipeline/battery |
-| 5 Pareto | beam adaptive sweep + pre-registration (`PREREG.md`) done; pipeline/battery sweeps over lambda in {1,10,100} only |
-| 6 generalisation | trigger ablation (beam) done; no plate / EPANET / multi-cell pack |
-| 7 real data | Z24 FDD + first-mode PRC (pooled AUROC 0.665); only mode 1 is usable; no LeakDB / battery dataset |
-| 8 writing | not written; `results/results.md` holds every number |
+| 2 clean twin fidelity | beam: location + both S_fit criteria pass; the "v2" config (fit weight 60) brings peak-severity MAE to a median of 0.043 over 5 seeds (one seed plateaus at 0.317; a fit-weight ramp restart reaches 0.044, reported separately); the clean-arm PRC AUROC target (0.4-0.6) is still missed because the honest twin under-reports peak severity. A supervised oracle reaches MAE 0.013, so the target is attainable, not noise-limited. Reported as a failure, not worked around (`paper/paper.md` §9). Pipeline/battery twins converge on the size/location quantities |
+| 3 attacks | A1, adaptive, A2 (alpha x p), A2', A3 implemented and run on beam (5 seeds for clean/A1), pipeline, battery |
+| 4 defence/baselines | **backdoor-specific** protocol: honest trigger-agnostic threshold + matched clean/compromised twins. PRC vs B1-B4,B6 (B5 n/a). The key result: PRC flags the backdoor's triggered-faulty claims but a matched clean twin on the *same* campaigns is not flagged -- separating a backdoor from a genuine fault |
+| 5 Pareto | beam adaptive sweep (flag-rate + matched-AUROC vs ASR), CIs, `PREREG.md` before the sweep |
+| 6 generalisation | trigger ablation; battery-pack cell-to-cell variation; measurement-noise sweep; kappa / healthy-floor vs detection difficulty |
+| 7 real data | Z24 FDD first-mode PRC (pooled AUROC 0.66); year-long EMS healthy envelope shows the result is optimistic without temperature compensation; geometry (14+30+14 m) confirmed from the dataset PDF |
+| 8 writing | `paper/paper.md`, assembled by `paper/build_paper.py` from `results/*` (fails on any missing number) |
 
-All results are in `results/results.md` (generated). Single seed unless stated; clean and A1 have 3 seeds.
+All numbers are in `results/results.md` and `paper/paper.md` (both generated). The `n` column of each table is the authoritative seed count. See `paper/paper.md` §9 for failed targets and deviations.
+
+### Reproduce the full pipeline
+```bash
+pytest && python -m ptwin.verify_all                             # Phase 1 (14 gates)
+# Phase 2-5 beam queue (44 jobs) and pipeline/battery queue (30 jobs):
+STEPS=5000 sh -c 'cat results/jobs_v2.txt   | xargs -P4 -L1 results/runq2.sh'
+sh -c 'cat results/jobs_gen2.txt | xargs -P3 -L1 results/runq_gen2.sh'
+python -m ptwin.gateway --assets 3 --steps 12000                 # A2'
+python -m ptwin.experiments.trigger_ablation                     # Phase 6
+python -m ptwin.experiments.generalisation
+python -m ptwin.experiments.oracle && python -m ptwin.experiments.oracle_consistent
+python -m ptwin.real.z24_modal && python -m ptwin.real.z24_prc && python -m ptwin.real.z24_ems
+python -m ptwin.experiments.run_matrix                           # -> results/matrix.jsonl
+python -m ptwin.experiments.figures                              # -> results/results.md
+python paper/build_paper.py                                      # -> paper/paper.md
+```

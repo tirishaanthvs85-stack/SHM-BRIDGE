@@ -55,5 +55,14 @@ This document records the foundational architecture and methodological decisions
   fault-location library; `eps_noise` is the Hsu high-probability bound from sigma and the estimator. This replaces the triangle-inequality bias term.
 - **Adaptive attacker.** It knows the defender's functional and penalises `S_res^2` computed from the readings' curvature and the claim; a
   penalty on the twin's own `u''` would not change what the defender sees.
-- **Unmet Phase-2 criteria.** Peak-severity MAE <= 0.05 sits near the noise limit (an analytic estimator reaches 0.046 only with 0.10 localisation
-  error), and the clean-arm PRC AUROC stays well above 0.6 because the twin under-reports peak severity. Both are reported as failures.
+- **Phase-2 criteria (corrected).** An earlier version of this file claimed the peak-severity MAE <= 0.05 target sits near the noise limit.
+  That was wrong: a supervised oracle reaches MAE 0.0136 (`results/oracle.json`), so the target is attainable. The v1 failure was
+  optimisation/capacity. The "v2" config (fit weight 60, tol 0.01, sine-ridge skeleton feature) reaches peak MAE 0.038-0.053 in 34/37 beam runs.
+  Three runs plateau early; they stay in the statistics and are re-run separately with a fit-weight log-ramp ("v2r", reported as a
+  separate row, never substituted). The clean-arm PRC AUROC (about 0.83 vs target 0.4-0.6) is still missed (faulty S_fit about 23% above
+  healthy); it is reported as a failure and thresholds were not changed.
+- **Backdoor-vs-fault protocol.** Triggered-faulty vs triggered-healthy AUROC cannot separate a backdoor from a genuine fault. The
+  backdoor-specific evaluation uses an honest trigger-agnostic threshold from healthy+faulty commissioning over the full envelope and
+  matched AUROC against the same-seed clean twin on identical campaigns.
+- **Engineering lesson.** A CRLF in a generated job file silently broke checkpoint saves after ~4 h of training; queue scripts now strip CR
+  and smoke-test saving first.

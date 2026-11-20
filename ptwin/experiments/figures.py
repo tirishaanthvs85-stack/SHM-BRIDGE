@@ -116,6 +116,21 @@ for g in ("v2", "v1"):
              "two-sidedness): it detects physical faults, not backdoors. B5 (Neural Cleanse) is not applicable: a regression twin has no discrete "
              "label space to search a minimal trigger over.\n")
 
+# ------------------------------------------------------------------------------------------------ plateau-stuck runs
+v2all = [r for r in beam if r["gen"] == "v2"]
+if v2all:
+    stuck = [r["name"] for r in v2all if r["peakMAE_u"] > 0.2]
+    L.append("\n## Plateau-stuck runs (v2, peak MAE > 0.2)\n")
+    L.append(f"{len(stuck)} of {len(v2all)} v2 beam runs did not leave the early plateau at fit weight 60 (stuck: {', '.join(stuck) if stuck else 'none'}). "
+             "They are kept in every v2 statistic above. Restarts with a fit-weight log-ramp (1 -> 60 over 1500 steps) are listed separately:\n")
+    rr = [r for r in beam if r["gen"] == "v2r"]
+    if rr:
+        L.append("| run | peak MAE | loc err | S_fit h | ASR (TF) | flag TF | flag TH | flag UF | flag UH | matched AUROC TF | phys. AUROC |"); L.append("|---|---|---|---|---|---|---|---|---|---|---|")
+        for r in rr:
+            f = r.get("flags", {})
+            L.append(f"| {r['name']} | {r['peakMAE_u']:.3f} | {r['locerr_u']:.3f} | {r['Sfit_h_u']:.2f} | {r['ASR_t']:.3f} | {f.get('flag_TF', float('nan')):.3f} | "
+                     f"{f.get('flag_TH', float('nan')):.3f} | {f.get('flag_UF', float('nan')):.3f} | {f.get('flag_UH', float('nan')):.3f} | {get(r, 'matched_auroc/TF'):.3f} | {r['AUROC_prc_t']:.3f} |")
+
 # ------------------------------------------------------------------------------------------------ Pareto frontier
 fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 done_any = False
