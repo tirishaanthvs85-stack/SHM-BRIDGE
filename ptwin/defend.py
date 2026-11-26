@@ -128,3 +128,13 @@ def backdoor_flags(net, sets=None, alpha=0.05):
 def matched_auroc(S_clean, S_att, key="TF"):
     """Twin-level AUROC on IDENTICAL campaigns: does the compromised twin's PRC score exceed the clean twin's?"""
     return auroc(S_clean[key], S_att[key])
+
+
+def s_phys(net, b):
+    """Gaussian-likelihood statistic for "the claim is correct": push the twin's claimed stiffness through the forward model
+    and compare with the readings in noise units. No derivative estimator, no lambda."""
+    dev, _ = twin_outputs(net, b)
+    D = b["d0"][:, None] * (1 - dev)
+    w = ctz(ctz(B.M[None] / D, B.XF, axis=1, initial=0), B.XF, axis=1, initial=0)
+    w = w - B.XF[None] * w[:, -1:]
+    return np.linalg.norm(w[:, IDX] - b["y"], axis=1) / b["sigma"]

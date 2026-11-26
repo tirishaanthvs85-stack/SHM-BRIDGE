@@ -71,3 +71,9 @@ This document records the foundational architecture and methodological decisions
 - 50 runs trained on Kaggle T4 x2 (30k steps, v2 config + fit-weight ramp 3000 on every seed, 5 seeds; beam clean/a1/adaptive, pipeline and battery clean/a1). All returned rc=0. They were run **after** the v2 gate failure was known, so they are a post-hoc replication, not pre-registered; v2 stays the headline.
 - v3 clean-arm PRC AUROC 0.47-0.53 (5/5 in the 0.4-0.6 band) vs v2 0.59-0.94, but the full Phase-2 gate still FAILS on v3 (healthy S_fit 3.1 < 3.9, location 1/5, MAE 3/5). Thresholds unchanged.
 - Checkpoints live in results/ckpt/v3_*.pt (copied from the Kaggle output); evaluation by run_matrix (gen "v3").
+
+## 7. Workstream A: conformal detection protocol (2026-11-26)
+- `core.conformal_threshold`, `defend.s_phys`, `experiments/protocol.py` (+`protocol_report.py` -> `results/protocol.md`). 60 beam checkpoints (v2, v3).
+- Original DKW/full-envelope protocol under-reports the backdoor. With conformal alpha=0.05: v3 A1 catch 1.00 (clean twins 0.06), v2 A1 catch 1.00 (v2 clean twins flagged 0.44 = clean-arm gap). Contaminated commissioning (f_ov 0.23, f_sh 0.5) drops catch to 0.44/0.38.
+- Environment scan: v3 A1 p<0.01 on 5/5, clean p>0.05 on 5/5; adaptive lambda=100 PRC scan still 5/5, S_phys scan 0/5.
+- Not yet done from NEXT_STEPS guide: A3 power curves vs stream length/prevalence, workstreams C-I.

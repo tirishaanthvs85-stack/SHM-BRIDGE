@@ -128,3 +128,11 @@ def bootstrap_ci(metric_fn, a, b, n=2000, seed=0, level=0.95):
     vals = [metric_fn(a[rng.integers(0, len(a), len(a))], b[rng.integers(0, len(b), len(b))]) for _ in range(n)]
     lo, hi = np.quantile(vals, [(1 - level) / 2, 1 - (1 - level) / 2])
     return float(lo), float(hi)
+
+
+def conformal_threshold(scores, alpha=0.05):
+    """Split-conformal alarm threshold: the k-th smallest score, k = ceil((n+1)(1-alpha)). Gives marginal FPR <= alpha on
+    exchangeable healthy scores with no distributional assumption (DKW is only needed for uniform ROC bands)."""
+    s = np.sort(np.asarray(scores, float)); n = len(s)
+    k = int(np.ceil((n + 1) * (1 - alpha)))
+    return float(s[min(k, n) - 1])

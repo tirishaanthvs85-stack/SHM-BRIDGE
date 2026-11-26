@@ -117,6 +117,45 @@ if _v3:
 else:
     sc["v3_replication"] = ""
 
+# Workstream A: conformal-threshold detection protocol (results/protocol.json)
+_P = jload(R("protocol.json"), {})
+def _pm(gen, arm, stat, f_ov, f_sh, key):
+    v = [x[key] for r in _P.values() if r["gen"] == gen and r["arm"] == arm for x in r["sweep"]
+         if x["stat"] == stat and x["f_ov"] == f_ov and x["f_sh"] == f_sh]
+    return float(np.mean(v)) if v else float("nan")
+def _scan(gen, arm, stat):
+    s_ = [r["scan"][stat] for r in _P.values() if r["gen"] == gen and r["arm"] == arm]
+    return sum(x["p"] < 0.01 for x in s_), sum(x["p"] > 0.05 for x in s_), len(s_)
+if _P:
+    g = "v3"
+    a_, c_ = _scan(g, "a1", "prc"), _scan(g, "clean", "prc")
+    ad_ = _scan(g, "adaptive_l100", "prc"); ap_ = _scan(g, "adaptive_l100", "phys")
+    sc["protocol_section"] = (
+        "### 6.x Detection protocol with split-conformal thresholds\n\n"
+        "The headline detection numbers above use the original protocol: a DKW-corrected quantile (about the 0.998 quantile at n = 800) calibrated on "
+        "healthy and faulty campaigns over the full operating envelope, which includes the trigger region. Two things make that protocol "
+        "pessimistic about the backdoor: the DKW margin buys a uniform guarantee that a single alarm threshold does not need, and commissioning "
+        "inside the trigger region lets the backdoored twin raise its own threshold. "
+        "We therefore re-evaluated every beam checkpoint with a split-conformal threshold (alpha = 0.05) and swept the commissioning set "
+        "(`ptwin/experiments/protocol.py`, results in `results/protocol.md`). \n\n"
+        f"With commissioning outside the trigger region (healthy only, f_ov = 0), the v3 A1 twins are flagged on {_pm(g,'a1','prc',0.0,0.0,'TF'):.2f} of triggered faulty campaigns, "
+        f"against {_pm(g,'clean','prc',0.0,0.0,'TF'):.2f} for the clean twins on the same campaigns (triggered healthy: {_pm(g,'a1','prc',0.0,0.0,'TH'):.2f}; "
+        f"untriggered faulty: {_pm(g,'a1','prc',0.0,0.0,'UF'):.2f}), so the alarm separates the backdoor from a genuine fault. "
+        f"The v2 twins give {_pm('v2','a1','prc',0.0,0.0,'TF'):.2f} for A1, but their clean twins are also flagged on {_pm('v2','clean','prc',0.0,0.0,'TF'):.2f} of faulty campaigns, "
+        "which is the clean-arm fidelity failure of §6.1 showing up as false accusations. "
+        f"Contamination is the dominant failure mode: when commissioning covers the full envelope with 50% faulty campaigns (f_ov = 0.23, f_sh = 0.5), "
+        f"the A1 catch rate falls to {_pm(g,'a1','prc',0.23,0.5,'TF'):.2f} (v3) and {_pm('v2','a1','prc',0.23,0.5,'TF'):.2f} (v2): "
+        "a defender who calibrates over a window that contains the trigger region and seeded faults under-detects. "
+        f"The forward-model statistic S_phys (no derivatives, no smoothing parameter) behaves similarly: A1 catch rate {_pm(g,'a1','phys',0.0,0.0,'TF'):.2f} at f_ov = 0, "
+        f"with healthy false alarms of {_pm(g,'a1','phys',0.0,0.0,'TH'):.2f}.\n\n"
+        f"A single-twin environment scan needs no clean reference twin and no knowledge of the trigger: flag every campaign of a 3,000-campaign stream "
+        f"(30% faulty, envelope -12 to 32 C), bin the flags by temperature and test whether the flag rate depends on temperature with a permutation null. "
+        f"On v3 it gives p < 0.01 on {a_[0]}/{a_[2]} A1 twins and p > 0.05 on {c_[1]}/{c_[2]} clean twins, with the hottest bin inside the trigger region for A1. "
+        f"Against the strongest evasion weight tested (lambda = 100) the PRC scan still gives p < 0.01 on {ad_[0]}/{ad_[2]} seeds, whereas the S_phys scan does so on {ap_[0]}/{ap_[2]}. "
+        "The v3 runs are post-hoc (see §6.1), 5 seeds each, so these are replication-grade numbers, not pre-registered ones.\n")
+else:
+    sc["protocol_section"] = ""
+
 # gate verdict sentence
 gate_rs = pick(GEN, "clean")
 def gate_ok():
@@ -188,6 +227,11 @@ LIM = """The following are reported as-is; none was worked around by moving a th
 
 # -------- fill ------------------------------------------------------------------------------
 tmpl = open(os.path.join(ROOT, "paper", "template.md"), encoding="utf-8").read()
+LIM = LIM + (nl_ := chr(10)) + nl_ + ("**Deviations from the pre-registration** (`PREREG.md`, commit 4b33ab9). (i) The main tables calibrate the alarm threshold on healthy plus faulty campaigns over the full envelope with a DKW quantile; PREREG specified healthy-only commissioning. "
+    "The split-conformal, healthy-only and contamination-sweep results in 6.x report the pre-registered style of calibration alongside it; we did not drop either. "
+    "(ii) The v3 runs (30,000 steps, fit-weight ramp on every seed, Kaggle T4) were launched after the v2 clean-arm gate failure was known and are post-hoc. "
+    "(iii) The S_phys statistic and the single-twin environment scan were added after seeing that the matched-twin AUROC needs a clean reference twin the defender does not have. "
+    "No Phase-2 gate threshold was changed.")
 tmpl = tmpl.replace("{{LIMITATIONS}}", LIM)
 for k, v in tables.items():
     tmpl = tmpl.replace("{{" + k + "}}", v)
